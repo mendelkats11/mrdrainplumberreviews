@@ -161,8 +161,6 @@ export default function ReviewGenerator({
       {copied && (
         <a
           href={googleReviewUrl}
-          target="_blank"
-          rel="noopener noreferrer"
           className="mt-4 flex cursor-pointer items-center justify-center rounded-full bg-teal px-5 py-3 text-center font-medium text-text transition hover:bg-teal-bright"
         >
           Leave your review on Google →
