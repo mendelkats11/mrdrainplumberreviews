@@ -42,6 +42,14 @@ const openings = [
   "so i needed a {service} and figured id just try these guys since they had decent reviews",
   "finally got around to booking a {service} after putting it off for way too long",
   "called them up for a {service}, wasnt sure what to expect honestly",
+  "had them come out for a {service} after finding them online, wasnt sure what to expect",
+  "google brought up mr drain plumber when i searched for a {service} nearby",
+  "our old plumber retired so we had to find someone new for a {service}, tried these guys",
+  "needed a {service} and didnt want to deal with the usual runaround, so called mr drain plumber",
+  "asked around the neighborhood for recommendations on a {service} and mr drain plumber came up a few times",
+  "had a {service} that i kept putting off until it finally became a bigger issue, called them in",
+  "was referred to mr drain plumber for a {service} by my realtor",
+  "tried a different plumber first for a {service}, wasnt happy, switched to mr drain plumber and it made a difference",
 ];
 
 // Bare verb phrase, implied subject "they" (added by the join variant).
@@ -54,6 +62,14 @@ const timeliness = [
   "made it out within a couple hours of calling",
   "were right on time, no complaints there",
   "showed up ready to go, no messing around",
+  "called ahead to confirm the time which i wasnt expecting",
+  "showed up a bit early actually, which threw me off but in a good way",
+  "gave me a heads up text when they were on the way",
+  "were flexible when i had to push the appointment back a bit",
+  "fit me in same week even though i called kind of last minute",
+  "arrived within the window they quoted, no runaround",
+  "showed up dressed and ready to work, no wasted time getting started",
+  "kept me posted the whole time on when theyd actually get there",
 ];
 
 const workmanship = [
@@ -65,6 +81,14 @@ const workmanship = [
   "double checked everything before calling it done",
   "explained it in plain english instead of talking over my head",
   "took his time instead of rushing through it",
+  "showed me photos of the issue before starting the work",
+  "answered every question i had without acting annoyed about it",
+  "left the work area cleaner than when they got there",
+  "used proper equipment instead of trying to shortcut the job",
+  "caught a second issue while they were in there and flagged it instead of ignoring it",
+  "wore shoe covers inside the house which i appreciated",
+  "didnt rush even though it was getting late in the day",
+  "made sure everything was working properly before packing up",
 ];
 
 const pricing = [
@@ -76,6 +100,14 @@ const pricing = [
   "gave me the price before starting so there were no surprises later",
   "charged exactly what they said they would, nothing extra tacked on",
   "price was fair, definitely didnt feel like i got ripped off",
+  "broke down the cost so i actually understood what i was paying for",
+  "offered a couple options at different price points instead of pushing the most expensive one",
+  "the invoice matched the estimate to the dollar",
+  "didnt charge extra for the after hours call which i expected them to",
+  "price felt steep at first but made sense once i saw the work involved",
+  "gave me a heads up before any extra cost came up instead of surprising me after",
+  "cheaper than the last plumber i used for something similar",
+  "no hidden fees tacked onto the final bill",
 ];
 
 const closings = [
@@ -87,6 +119,20 @@ const closings = [
   "solid experience overall",
   "cant complain honestly",
   "already told a friend about them",
+  "worth every penny",
+  "wouldnt hesitate to call them again",
+  "exactly what i was hoping for",
+  "glad i went with them",
+  "no regrets calling them",
+  "will keep their number saved",
+  "hard to find a plumber this reliable",
+  "genuinely impressed",
+  "def a keeper",
+  "cant recommend them enough",
+  "one of the better contractor experiences ive had",
+  "made a stressful situation a lot easier",
+  "will be my go-to from now on",
+  "exceeded what i expected honestly",
 ];
 
 function cap(s: string): string {
