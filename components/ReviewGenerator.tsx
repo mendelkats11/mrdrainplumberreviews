@@ -7,9 +7,11 @@ const MAX_CLAIM_ATTEMPTS = 25;
 
 export default function ReviewGenerator({
   areaSlug,
+  areaName,
   googleReviewUrl,
 }: {
   areaSlug: string;
+  areaName: string;
   googleReviewUrl: string;
 }) {
   const [candidate, setCandidate] = useState<ReviewCandidate | null>(null);
@@ -21,15 +23,15 @@ export default function ReviewGenerator({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    setCandidate(randomCandidate());
-  }, []);
+    setCandidate(randomCandidate(areaName));
+  }, [areaName]);
 
   function regenerate() {
     setCandidate((current) => {
-      let next = randomCandidate();
+      let next = randomCandidate(areaName);
       let attempts = 0;
       while (current && next.id === current.id && attempts < 10) {
-        next = randomCandidate();
+        next = randomCandidate(areaName);
         attempts++;
       }
       return next;
@@ -85,10 +87,10 @@ export default function ReviewGenerator({
           return;
         }
 
-        let next = randomCandidate();
+        let next = randomCandidate(areaName);
         let guard = 0;
         while (tried.has(next.id) && guard < 20) {
-          next = randomCandidate();
+          next = randomCandidate(areaName);
           guard++;
         }
         attempt = next;

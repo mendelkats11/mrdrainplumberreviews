@@ -28,7 +28,11 @@ export default async function ReviewAreaPage({
         </p>
       </div>
 
-      <ReviewGenerator areaSlug={reviewArea.slug} googleReviewUrl={reviewArea.googleReviewUrl} />
+      <ReviewGenerator
+        areaSlug={reviewArea.slug}
+        areaName={reviewArea.name}
+        googleReviewUrl={reviewArea.googleReviewUrl}
+      />
     </main>
   );
 }
