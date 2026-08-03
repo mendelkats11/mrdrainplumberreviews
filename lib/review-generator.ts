@@ -1,19 +1,22 @@
-// Combinatorial review-text generator. Six CONTENT pools (service,
-// opening, timeliness, workmanship, pricing, closing) supply the actual
-// substance of a review; two COSMETIC pools (how they're joined into
-// sentences, and capitalization style) only affect punctuation/casing,
-// never substance.
+// Combinatorial review-text generator. Seven CONTENT pools (service,
+// opening, timeliness, workmanship, pricing, closing, one-liner) supply
+// the actual substance of a review; four COSMETIC pools (how clauses are
+// joined, capitalization style, whether the closing shows, and whether
+// the whole review uses the short one-liner format) only affect
+// formatting, never substance. In the short format, only the service and
+// one-liner phrase actually render — the other 5 content indices are
+// still rolled (for a consistent contentKey shape) but unused.
 //
 // Every candidate carries a numeric id (for reference/audit) and a
-// contentKey — the 6 content-pool indices it was built from. The
-// server-side ledger (app/api/claim-review/route.ts) uses contentKey to
-// enforce the "no more than 4 matching phrases" rule: two reviews that
-// share 5 or 6 of their 6 content phrases are too similar, even if
-// cosmetic differences (join style, casing) make the raw text non-
-// identical. That's what actually guarantees no duplicates AND no
-// near-duplicates — not this file, which only supplies candidates and
-// never decides what's "used." A candidate only becomes "used" when it's
-// actually copied; regenerating without copying never touches the ledger.
+// contentKey — the 7 content-pool indices it was built from. The
+// server-side ledger (app/api/claim-review/route.ts) enforces two rules:
+// no more than 4 of those 7 phrases may match anything already used, AND
+// (as a backstop for the short format, where most content indices go
+// unused) the exact rendered text can never repeat either. That's what
+// actually guarantees no duplicates AND no near-duplicates — not this
+// file, which only supplies candidates and never decides what's "used."
+// A candidate only becomes "used" when it's actually copied; regenerating
+// without copying never touches the ledger.
 
 export const services = [
   "bathroom renovation",
@@ -239,215 +242,127 @@ const timeliness = [
   "called back within minutes of my initial message",
   "showed up without any surprises about the appointment time",
   // Location-mention variant — always the last entry, see randomCandidate().
-  "sent the mr drain plumber {area} truck out within the hour",
+  "got here fast, mr drain plumber {area} really came through",
 ];
 
 const workmanship = [
-  "explained what he was doing and why before touching anything",
-  "cleaned up after himself so you'd barely know anyone had been in the house",
-  "didnt try to upsell me on anything i didnt ask for",
-  "walked me through the problem instead of just doing it and leaving",
-  "was pretty straightforward about what needed fixing and what could wait",
-  "double checked everything before calling it done",
-  "explained it in plain english instead of talking over my head",
-  "took his time instead of rushing through it",
-  "showed me photos of the issue before starting the work",
-  "answered every question i had without acting annoyed about it",
-  "left the work area cleaner than when they got there",
-  "used proper equipment instead of trying to shortcut the job",
-  "caught a second issue while they were in there and flagged it instead of ignoring it",
-  "wore shoe covers inside the house which i appreciated",
-  "didnt rush even though it was getting late in the day",
-  "made sure everything was working properly before packing up",
-  "pointed out a potential problem before it became a bigger one",
-  "labeled everything so i knew what was replaced and why",
-  "tested everything twice before considering the job finished",
-  "brought in a second guy for a second opinion instead of guessing",
-  "walked me through basic maintenance so i could avoid the same issue later",
-  "took before and after photos without me even asking",
-  "didnt leave until i confirmed everything was working the way i wanted",
-  "used drop cloths so nothing in the house got messed up",
-  "handled an unexpected complication without making it my problem to solve",
-  "kept the noise down as much as possible, which i appreciated with a baby in the house",
-  "matched the existing fixtures instead of just installing whatever they had on hand",
-  "explained the warranty on the work clearly before leaving",
-  "didnt cut corners even on the parts i wouldnt have noticed",
-  "asked before making any changes outside of what we originally discussed",
-  "handled it efficiently without making it feel rushed",
-  "brought the right parts the first time, no second trip needed",
-  "were upfront when something wasnt going to be a quick fix",
-  "respected the house, took shoes off without being asked",
-  "showed genuine care about getting it right, not just getting it done",
-  "caught something the previous plumber had missed entirely",
-  "left clear instructions for what to do if anything came up again",
-  "handled everything themselves instead of subcontracting it out",
-  "were patient with our older plumbing system instead of pushing a full replacement",
-  "walked around the house checking for any other potential issues",
-  "took extra care around our new flooring while working",
-  "explained the difference between a quick fix and a long term solution",
-  "showed up with a fully stocked truck so nothing was missing",
-  "made sure the kids and pets stayed safely out of the way",
-  "took time to answer my husbands questions over the phone mid job",
-  "kept us updated with photos throughout the repair",
-  "went above and beyond fixing a second small issue at no extra charge",
-  "left the bathroom spotless when they were done",
-  "double checked the water pressure before calling it finished",
-  "was upfront about needing a specialty part and what that meant for timing",
-  "took the time to explain what caused the issue in the first place",
-  "handled an unexpected hiccup mid job without missing a beat",
-  "was respectful of our home the entire time they were here",
-  "made sure to seal everything up properly before leaving",
-  "brought in extra lighting to get a better look at the problem",
-  "consulted with a specialist before finalizing the repair plan",
-  "walked me through before and after so i could see the difference",
-  "took precautions to protect our hardwood floors",
-  "was thorough checking for leaks in other parts of the house too",
-  "explained everything without making me feel rushed to decide",
-  "handled the whole thing with zero mess left behind",
-  "made sure the new fixture matched the rest of the bathroom",
-  "went the extra mile making sure everything was up to code",
-  "took care to test the water heater thoroughly before leaving",
-  "was patient walking my elderly mother through what was happening",
-  "left detailed notes about the work in case we needed them later",
-  "made sure to double check everything before considering it done",
-  "took the initiative to fix a related issue while already in there",
-  "was meticulous about cleanup, even under the sink",
-  "explained the repair in a way that made total sense",
-  "handled a tricky access point without any extra fuss",
-  "made sure everything was properly labeled for future reference",
-  "took photos of the finished work for our records",
-  "was careful moving furniture out of the way and putting it back",
-  "went out of their way to make sure we understood the maintenance going forward",
-  "checked in with us at each step before moving forward",
-  "was straightforward about what could wait until later",
-  "made the whole repair look easy even though it clearly wasnt",
-  "took the time to test everything twice before leaving",
-  "was careful not to disturb the rest of the house during the repair",
-  "explained our options clearly instead of pushing one over another",
-  "handled the older plumbing with real care instead of rushing it",
-  "went through a full checklist before wrapping up",
-  "was proactive about spotting a problem we hadnt even noticed",
-  "made sure to vacuum up afterward, which we werent expecting",
-  "took the extra step of testing the water temperature before leaving",
-  "was honest that a full replacement wasnt necessary yet",
-  "handled everything with the kind of care youd want in your own home",
-  "made time to explain things to my teenager who was curious about the process",
-  "took care to match the finish on the new parts",
-  "was diligent about checking every connection before finishing up",
-  "explained the warranty coverage clearly before wrapping up",
-  "made the extra trip to the truck without complaint when a part was missing",
-  "took our concerns seriously instead of brushing them off",
-  "was careful with our older appliances while working nearby",
-  "went back to double check a spot they werent fully satisfied with",
-  "made sure everything was properly tightened before leaving",
-  "took the time to clean up dust from the wall repair",
-  "was patient answering the same question a couple different ways until it clicked",
+  "He explained what he was doing before touching anything",
+  "The plumber cleaned up so well you'd barely know anyone had been there",
+  "He didn't try to upsell us on anything we didn't need",
+  "The plumber walked us through the problem before starting",
+  "He was straightforward about what needed fixing and what could wait",
+  "The plumber double checked everything before calling it done",
+  "He explained things in plain language instead of using a bunch of jargon",
+  "The guy took his time instead of rushing through it",
+  "He showed us photos of the issue before starting the work",
+  "The plumber answered every question without acting annoyed",
+  "He left the work area cleaner than he found it",
+  "The plumber used proper equipment instead of cutting corners",
+  "He caught a second issue while he was in there and flagged it right away",
+  "The plumber wore shoe covers inside without us asking",
+  "He didn't rush even though it was getting late in the day",
+  "The guy made sure everything worked properly before packing up",
+  "He pointed out a potential problem before it turned into a bigger one",
+  "The plumber labeled everything so we knew what was replaced",
+  "He tested everything twice before calling the job finished",
+  "He brought in a second opinion instead of just guessing",
+  "He walked us through basic maintenance so we could avoid the same issue",
+  "The plumber took before and after photos without us even asking",
+  "He didn't leave until we confirmed everything was working right",
+  "The plumber used drop cloths so nothing in the house got messed up",
+  "He handled an unexpected complication without making it our problem",
+  "The plumber kept the noise down, which we appreciated with the baby sleeping",
+  "He matched the existing fixtures instead of installing whatever he had on hand",
+  "The guy explained the warranty clearly before he left",
+  "He didn't cut corners even on the parts we wouldn't have noticed",
+  "The plumber asked before making any changes outside what we'd discussed",
+  "He respected the house and took his shoes off without being asked",
+  "The plumber showed genuine care about getting it right, not just getting it done",
+  "He caught something a previous plumber had completely missed",
+  "The plumber left clear instructions in case anything came up again",
+  "He handled everything himself instead of subcontracting it out",
+  "The guy was patient with our older plumbing instead of pushing a full replacement",
+  "He walked around checking for any other potential issues before leaving",
+  "The plumber took extra care around our new flooring",
+  "He explained the difference between a quick fix and a real long term solution",
+  "The plumber made sure the kids and dog stayed safely out of the way",
+  "He took the time to explain what actually caused the issue",
+  "The plumber was respectful of our home the whole time he was here",
+  "He brought extra lighting to get a better look at the problem",
+  "The guy consulted a specialist before finalizing the repair",
+  "He was thorough checking for leaks in other parts of the house too",
+  "The plumber made sure the new fixture actually matched the rest of the bathroom",
+  "He was proactive about spotting a problem we hadn't even noticed yet",
+  "The plumber was honest that a full replacement wasn't necessary yet",
+  "He took the extra step of testing the water temperature before leaving",
+  "The plumber checked in with us at each step before moving forward",
+  "He was upfront about needing a specialty part and what that meant for timing",
+  "The guy handled a tricky access point without any extra fuss",
+  "He explained our options clearly instead of pushing one over the other",
+  "The plumber went through a full checklist before wrapping up",
+  "He was diligent about checking every connection before calling it finished",
   // Location-mention variant — always the last entry, see randomCandidate().
-  "sent a tech from mr drain plumber {area} who explained everything clearly",
+  "The mr drain plumber {area} guy explained everything clearly before starting",
 ];
 
 const pricing = [
-  "price matched what they quoted me over the phone so no surprises there",
-  "didnt overcharge me even though it took longer than expected",
-  "quoted me a fair price up front and stuck to it",
-  "cost ended up being reasonable for the work that got done",
-  "was a little pricier than i was hoping for but the work justified it",
-  "gave me the price before starting so there were no surprises later",
-  "charged exactly what they said they would, nothing extra tacked on",
-  "price was fair, definitely didnt feel like i got ripped off",
-  "broke down the cost so i actually understood what i was paying for",
-  "offered a couple options at different price points instead of pushing the most expensive one",
-  "the invoice matched the estimate to the dollar",
-  "didnt charge extra for the after hours call which i expected them to",
-  "price felt steep at first but made sense once i saw the work involved",
-  "gave me a heads up before any extra cost came up instead of surprising me after",
-  "cheaper than the last plumber i used for something similar",
-  "no hidden fees tacked onto the final bill",
-  "final price ended up lower than the original estimate",
-  "didnt nickel and dime me for small stuff along the way",
-  "explained why the price was what it was instead of just handing me a number",
-  "offered a senior discount without me having to ask",
-  "price included the follow up visit, which i wasnt expecting",
-  "was upfront that cash or card made no difference in price",
-  "gave me a written quote before starting, not just a verbal estimate",
-  "price stayed the same even after the job turned out more complicated than planned",
-  "didnt charge a separate diagnostic fee like some places do",
-  "worked with my budget instead of pushing the priciest option",
-  "price was in line with what i'd researched online beforehand",
-  "included parts and labor clearly broken out on the invoice",
-  "didnt charge extra for the weekend appointment",
-  "gave me financing options when i mentioned the cost was a stretch",
-  "price reflected the quality, not the cheapest but not overpriced either",
-  "matched a quote i got from another company without me even asking them to",
-  "was clear about the price difference between repair and replacement",
-  "threw in a small extra fix at no charge",
-  "gave a military discount which i really appreciated",
-  "price was reasonable considering it was an after hours call",
-  "didnt make me feel weird for asking questions about the invoice",
-  "kept costs down by fixing instead of pushing a full replacement",
-  "gave a price range up front so there were no surprises later",
-  "sent the invoice digitally which made it easy to keep for records",
-  "explained each line item so nothing felt like a mystery charge",
-  "held to the original quote even after finding a second issue",
-  "offered a discount for booking multiple services at once",
-  "gave a same day estimate before any work even started",
-  "was transparent about the cost of parts versus labor",
-  "didnt pressure us into the most expensive fixture option",
-  "price ended up being fair compared to two other quotes we got",
-  "explained the cost difference between repairing and replacing clearly",
-  "gave us time to think it over before committing to the price",
-  "was upfront that the emergency call would cost a bit more",
-  "broke everything down so we could see exactly what we were paying for",
-  "priced it fairly for the amount of work that ended up being involved",
-  "didnt charge us for the time spent diagnosing the issue",
-  "offered a payment plan when we mentioned it was a stretch",
-  "gave us a ballpark before arriving so there were no surprises",
-  "price matched what a neighbor told us they paid for something similar",
-  "was clear that the quote included cleanup and disposal",
-  "didnt tack on a fee for the extra time the job took",
-  "gave a fair price considering how old our plumbing system is",
-  "was reasonable about the cost of the specialty part needed",
-  "explained why cheaper options wouldnt have solved the actual problem",
-  "offered a discount since we were repeat customers",
-  "price stayed exactly the same as the initial phone quote",
-  "was honest that a temporary fix would end up costing more long term",
-  "gave us a detailed written estimate before starting anything",
-  "didnt charge extra even though the job ran into overtime",
-  "price was fair enough that we didnt bother getting a second quote",
-  "was clear about what the warranty would and wouldnt cover",
-  "gave a fair trade in credit for the old unit we were replacing",
-  "explained the price difference between the two fixture brands",
-  "didnt make us feel pressured to upgrade beyond what we needed",
-  "price included a follow up check a few weeks later",
-  "was upfront that the cost would depend on what they found once inside the wall",
-  "gave a fair price for a same day emergency call",
-  "explained financing options without pushing us to use them",
-  "price matched the estimate almost to the dollar",
-  "was reasonable given it was a holiday weekend appointment",
-  "didnt charge extra to haul away the old water heater",
-  "gave us the option to pause and think before approving extra work",
-  "price felt fair even though the job turned out more involved than expected",
-  "was clear about the cost before touching anything",
-  "offered a bundle price when we needed two things fixed",
-  "didnt overcharge just because it was an after hours emergency",
-  "gave a fair estimate that didnt change once they started",
-  "price included a small buffer for unexpected complications, which we appreciated",
-  "was transparent that the cost would be higher for the specialty fitting",
-  "didnt charge a callback fee when we noticed a small issue after",
-  "gave us a written breakdown instead of just a total number",
-  "price was reasonable for the amount of experience clearly on display",
-  "was upfront that older homes sometimes come with pricier surprises",
-  "offered to match a competitors quote without any pushback",
-  "didnt nickel and dime for the small parts along the way",
-  "gave a fair price considering same day service isnt cheap anywhere",
-  "price reflected the quality of the parts they used",
-  "was reasonable about travel time being included in the quote",
-  "didnt charge extra for accessing a tricky crawl space",
-  "gave us the actual cost instead of a rough guess",
-  "price ended up lower than what we budgeted for going in",
-  "was fair about pro rating the cost since only part of the system needed replacing",
+  "The price matched what they quoted over the phone, no surprises",
+  "He didn't overcharge us even though the job took longer than expected",
+  "The plumber quoted a fair price up front and stuck to it",
+  "The cost ended up being reasonable for the work that got done",
+  "He gave us the price before starting so there were no surprises later",
+  "The plumber charged exactly what he said he would, nothing extra tacked on",
+  "The price was fair, we didn't feel ripped off at all",
+  "He broke down the cost so we actually understood what we were paying for",
+  "The plumber offered a couple options at different price points",
+  "The invoice matched the estimate down to the dollar",
+  "He didn't charge extra for the after hours call, which we expected he would",
+  "The price felt steep at first but made sense once we saw the work involved",
+  "He gave us a heads up before any extra cost came up",
+  "It ended up cheaper than the last plumber we used for something similar",
+  "There were no hidden fees tacked onto the final bill",
+  "The final price ended up lower than the original estimate",
+  "He didn't nickel and dime us for small stuff along the way",
+  "The guy explained why the price was what it was instead of just handing us a number",
+  "He offered a senior discount without us even having to ask",
+  "The price included a follow up visit, which we weren't expecting",
+  "He was upfront that cash or card made no difference in price",
+  "The plumber gave us a written quote before starting, not just a verbal one",
+  "The price stayed the same even after the job got more complicated than planned",
+  "He didn't charge a separate diagnostic fee like some places do",
+  "The plumber worked with our budget instead of pushing the priciest option",
+  "The price was in line with what we'd already researched online",
+  "Parts and labor were clearly broken out on the invoice",
+  "He didn't charge extra for the weekend appointment",
+  "The plumber gave us financing options when we mentioned the cost was a stretch",
+  "The price reflected the quality, not the cheapest option but not overpriced either",
+  "He matched a quote we got from another company without us even asking",
+  "The guy was clear about the price difference between repair and replacement",
+  "He threw in a small extra fix at no charge",
+  "The plumber gave us a military discount, which we really appreciated",
+  "The price was reasonable considering it was an after hours call",
+  "He didn't make us feel weird for asking questions about the invoice",
+  "The plumber kept costs down by fixing instead of pushing a full replacement",
+  "He gave us a price range up front so there were no surprises later",
+  "The invoice was sent digitally which made it easy to keep for our records",
+  "He explained each line item so nothing felt like a mystery charge",
+  "The plumber held to the original quote even after finding a second issue",
+  "He offered a discount for booking more than one service at once",
+  "The guy gave a same day estimate before any work even started",
+  "He was transparent about the cost of parts versus labor",
+  "The plumber didn't pressure us into the most expensive fixture option",
+  "The price ended up being fair compared to two other quotes we got",
+  "He explained the cost difference between repairing and replacing",
+  "The plumber gave us time to think it over before committing to anything",
+  "He was upfront that the emergency call would cost a bit more",
+  "The plumber broke everything down so we could see exactly what we were paying for",
+  "He didn't charge us for the time spent just diagnosing the issue",
+  "The guy offered a payment plan when we mentioned it was a stretch",
+  "He gave us a ballpark before arriving so there were no surprises",
+  "The price matched what a neighbor told us they'd paid for something similar",
+  "The plumber was clear that the quote included cleanup and disposal",
   // Location-mention variant — always the last entry, see randomCandidate().
-  "mr drain plumber {area} gave me a fair price and stuck to it",
+  "Mr. Drain Plumber {area} gave us a fair price and stuck to it",
 ];
 
 // Full sentences with a real subject, not bare fragments — closings are
@@ -561,6 +476,41 @@ function cap(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+function uncap(s: string): string {
+  return s.charAt(0).toLowerCase() + s.slice(1);
+}
+
+// Complete, self-contained one-line reviews — used for a minority of
+// generations instead of the full multi-clause format, so not every
+// review reads like a mini essay. {service} gets substituted in.
+const oneLiners = [
+  "fast, friendly, and upfront about pricing for our {service}, would use them again",
+  "quick and professional {service}, highly recommend",
+  "great experience with our {service}, five stars",
+  "did our {service} quickly and the price was fair, would call again",
+  "solid work on our {service} and fair pricing, no complaints",
+  "they handled our {service} fast and did it right, will use them again",
+  "really happy with how they handled our {service}, quick and professional",
+  "affordable and quick {service}, exactly what we needed",
+  "great job on the {service}, fair price and no hassle",
+  "they fixed our {service} fast and charged a fair price, would recommend them",
+  "efficient, honest, and fairly priced for our {service}",
+  "showed up fast, fixed the {service}, fair price too",
+  "quick response and quality work on our {service}, thanks",
+  "handled our {service} quickly and professionally, would recommend",
+  "fair price and fast service on our {service}, very happy",
+  "they really helped fast and fixed the {service} issue, appreciate it",
+  "wasnt sure what to expect but they nailed the {service}",
+  "good communication and solid work on the {service}",
+  "prompt, polite, and fairly priced for our {service}",
+  "no complaints about the {service}, fast and fair",
+  "easy to book, fair price, and the {service} was done right the first time",
+  "they showed up quick and knocked out the {service} without any issues",
+  "straightforward pricing and quick work on our {service}, would use again",
+  "friendly guy, fair price, fixed our {service} fast",
+  "cant complain about the {service}, quick, fair, and done right",
+];
+
 interface Parts {
   opening: string;
   timeliness: string;
@@ -591,6 +541,10 @@ const joinVariants: Array<(p: Parts, showClosing: boolean) => string> = [
     `${cap(p.opening)}. ${cap(p.workmanship)}. ${cap(p.pricing)}. They ${p.timeliness}.${showClosing ? ` ${cap(p.closing)}.` : ""}`,
   (p, showClosing) =>
     `${cap(p.opening)}, they ${p.timeliness}. ${cap(p.workmanship)}. ${cap(p.pricing)}.${showClosing ? ` ${cap(p.closing)}.` : ""}`,
+  (p, showClosing) =>
+    `${cap(p.opening)}. Honestly, ${uncap(p.workmanship)}. They ${p.timeliness} too. ${cap(p.pricing)}.${showClosing ? ` ${cap(p.closing)}.` : ""}`,
+  (p, showClosing) =>
+    `${cap(p.opening)}. On top of that, ${uncap(p.pricing)}. ${cap(p.workmanship)}. They ${p.timeliness} as well.${showClosing ? ` ${cap(p.closing)}.` : ""}`,
 ];
 
 // About 1 in 3 reviews skip the closing sentence entirely — always ending
@@ -623,11 +577,15 @@ function sprinkleOneSentenceLower(text: string): string {
 
 // Content pools — each index here is one "phrase" for the purposes of
 // the 4-matching-phrases rule.
-const contentPools = [services, openings, timeliness, workmanship, pricing, closings] as const;
+const contentPools = [services, openings, timeliness, workmanship, pricing, closings, oneLiners] as const;
 const CONTENT_DIMS = contentPools.map((p) => p.length);
 
+// About 1 in 5 reviews use the short one-liner format instead of the
+// full multi-clause one — not every review should read like a mini essay.
+const formatChoices = ["long", "long", "long", "long", "short"] as const;
+
 // Cosmetic pools — never count toward phrase-matching.
-const cosmeticPools = [joinVariants, capitalizationStyles, closingVisibility] as const;
+const cosmeticPools = [joinVariants, capitalizationStyles, closingVisibility, formatChoices] as const;
 const COSMETIC_DIMS = cosmeticPools.map((p) => p.length);
 
 const ALL_DIMS = [...CONTENT_DIMS, ...COSMETIC_DIMS];
@@ -638,9 +596,9 @@ export const TOTAL_COMBINATIONS = ALL_DIMS.reduce((a, b) => a * b, 1);
 export interface ReviewCandidate {
   id: number;
   text: string;
-  // The 6 content-pool indices this candidate was built from — sent to
+  // The 7 content-pool indices this candidate was built from — sent to
   // the server so it can check phrase overlap against everything
-  // already used, not just exact text matches.
+  // already used, in addition to an exact-text check.
   contentKey: number[];
 }
 
@@ -657,7 +615,13 @@ function comboId(indices: number[]): number {
 }
 
 function buildText(indices: number[], areaName: string): string {
-  const [si, oi, ti, wi, pi, ci, ji, capi, cvi] = indices;
+  const [si, oi, ti, wi, pi, ci, li, ji, capi, cvi, fi] = indices;
+
+  if (formatChoices[fi] === "short") {
+    const raw = `${cap(oneLiners[li].replaceAll("{service}", services[si]))}.`;
+    return capitalizationStyles[capi](raw);
+  }
+
   const opening = openings[oi]
     .replaceAll("{service}", services[si])
     .replaceAll("{area}", areaName);
@@ -720,7 +684,21 @@ export function randomCandidate(areaName: string): ReviewCandidate {
     ? closingVisibility.findIndex((visible) => visible)
     : randInt(closingVisibility.length);
 
-  const indices = [si, oi, ti, wi, pi, ci, randInt(joinVariants.length), randInt(capitalizationStyles.length), cvi];
+  const li = randInt(oneLiners.length);
+
+  const indices = [
+    si,
+    oi,
+    ti,
+    wi,
+    pi,
+    ci,
+    li,
+    randInt(joinVariants.length),
+    randInt(capitalizationStyles.length),
+    cvi,
+    randInt(formatChoices.length),
+  ];
   const contentKey = indices.slice(0, CONTENT_DIMS.length);
   return { id: comboId(indices), text: buildText(indices, areaName), contentKey };
 }

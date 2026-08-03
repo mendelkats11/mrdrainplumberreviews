@@ -7,12 +7,16 @@ import path from "path";
 // not the size of the phrase pool — see lib/review-generator.ts for why
 // random generation alone can't guarantee that.
 //
-// The dedup rule is phrase-overlap, not exact-text match: a candidate is
-// rejected if it shares more than 4 of its 6 content phrases (service,
-// opening, timeliness, workmanship, pricing, closing) with anything
-// already used — otherwise two reviews could differ only in punctuation/
-// capitalization (cosmetic, see joinVariants/capitalizationStyles) while
-// reading as the same review to anyone comparing them.
+// The primary dedup rule is phrase-overlap, not exact-text match: a
+// candidate is rejected if it shares more than 4 of its 7 content phrases
+// (service, opening, timeliness, workmanship, pricing, closing, one-liner)
+// with anything already used — otherwise two reviews could differ only in
+// punctuation/capitalization (cosmetic, see joinVariants/
+// capitalizationStyles) while reading as the same review to anyone
+// comparing them. On top of that, exact rendered text is also checked
+// directly — this matters most for the short one-liner format, where only
+// 2 of the 7 content indices (service, one-liner) actually render, so two
+// different-looking contentKeys could still produce byte-identical text.
 //
 // A candidate only counts as "used" once it's actually claimed here — a
 // visitor hitting Regenerate without copying never touches this ledger.
@@ -92,10 +96,10 @@ export async function POST(req: NextRequest) {
 
   const result = await enqueue(async () => {
     const used = await readUsed();
-    const tooSimilar = used.some(
-      (r) => matchingPhraseCount(r.contentKey, contentKey) > MAX_MATCHING_PHRASES,
+    const alreadyUsed = used.some(
+      (r) => r.text === text || matchingPhraseCount(r.contentKey, contentKey) > MAX_MATCHING_PHRASES,
     );
-    if (tooSimilar) {
+    if (alreadyUsed) {
       return { ok: false as const };
     }
     used.push({ id, area, text, contentKey, usedAt: new Date().toISOString() });
