@@ -1,16 +1,18 @@
-// Combinatorial review-text generator. Seven CONTENT pools (service,
-// opening, timeliness, workmanship, pricing, closing, one-liner) supply
-// the actual substance of a review; four COSMETIC pools (how clauses are
-// joined, capitalization style, whether the closing shows, and whether
-// the whole review uses the short one-liner format) only affect
-// formatting, never substance. In the short format, only the service and
-// one-liner phrase actually render — the other 5 content indices are
-// still rolled (for a consistent contentKey shape) but unused.
+// Combinatorial review-text generator. Eight CONTENT pools (service,
+// opening, timeliness, workmanship, pricing, closing, one-liner,
+// one-liner-service) supply the actual substance of a review; four
+// COSMETIC pools (how clauses are joined, capitalization style, whether
+// the closing shows, and whether the whole review uses the short
+// one-liner format) only affect formatting, never substance. The short
+// one-liner format is now the dominant case (~75% of reviews, see
+// formatChoices) — only the one-liner-service and one-liner phrase
+// actually render for it; the other 6 content indices are still rolled
+// (for a consistent contentKey shape) but unused.
 //
 // Every candidate carries a numeric id (for reference/audit) and a
-// contentKey — the 7 content-pool indices it was built from. The
+// contentKey — the 8 content-pool indices it was built from. The
 // server-side ledger (app/api/claim-review/route.ts) enforces two rules:
-// no more than 4 of those 7 phrases may match anything already used, AND
+// no more than 4 of those 8 phrases may match anything already used, AND
 // (as a backstop for the short format, where most content indices go
 // unused) the exact rendered text can never repeat either. That's what
 // actually guarantees no duplicates AND no near-duplicates — not this
@@ -29,6 +31,41 @@ export const services = [
   "faucet installation",
   "sewer line repair",
   "leak repair",
+];
+
+// One-liners (the dominant format, see formatChoices below) draw from
+// their own services list, weighted toward bigger jobs — a punchy
+// one-sentence review reads naturally for "redid our whole bathroom,"
+// less naturally for "unclogged a drain." A handful of smaller jobs are
+// mixed in for variety, but most entries are the higher-ticket kind. The
+// full multi-clause format still draws from the complete services list
+// above.
+const oneLinerServices = [
+  "bathroom renovation",
+  "water heater replacement",
+  "bathtub replacement",
+  "sump pump installation",
+  "sewer line repair",
+  "whole home repipe",
+  "tankless water heater installation",
+  "water softener installation",
+  "water main replacement",
+  "gas line installation",
+  "boiler replacement",
+  "kitchen remodel",
+  "shower replacement",
+  "trenchless sewer repair",
+  "sewer camera inspection",
+  "water filtration system installation",
+  "radiant floor heating installation",
+  "backflow preventer installation",
+  "water heater installation",
+  "hydro jetting",
+  "toilet replacement",
+  "drain snaking",
+  "garbage disposal installation",
+  "water heater repair",
+  "shower valve replacement",
 ];
 
 // Bare fragment, no leading capital, no trailing period — punctuation and
@@ -577,12 +614,22 @@ function sprinkleOneSentenceLower(text: string): string {
 
 // Content pools — each index here is one "phrase" for the purposes of
 // the 4-matching-phrases rule.
-const contentPools = [services, openings, timeliness, workmanship, pricing, closings, oneLiners] as const;
+const contentPools = [
+  services,
+  openings,
+  timeliness,
+  workmanship,
+  pricing,
+  closings,
+  oneLiners,
+  oneLinerServices,
+] as const;
 const CONTENT_DIMS = contentPools.map((p) => p.length);
 
-// About 1 in 5 reviews use the short one-liner format instead of the
-// full multi-clause one — not every review should read like a mini essay.
-const formatChoices = ["long", "long", "long", "long", "short"] as const;
+// 75% of reviews use the short one-liner format instead of the full
+// multi-clause one — the long format read as bulky, and most real
+// reviews for a single job are one sentence, not a mini essay.
+const formatChoices = ["long", "short", "short", "short"] as const;
 
 // Cosmetic pools — never count toward phrase-matching.
 const cosmeticPools = [joinVariants, capitalizationStyles, closingVisibility, formatChoices] as const;
@@ -596,7 +643,7 @@ export const TOTAL_COMBINATIONS = ALL_DIMS.reduce((a, b) => a * b, 1);
 export interface ReviewCandidate {
   id: number;
   text: string;
-  // The 7 content-pool indices this candidate was built from — sent to
+  // The 8 content-pool indices this candidate was built from — sent to
   // the server so it can check phrase overlap against everything
   // already used, in addition to an exact-text check.
   contentKey: number[];
@@ -615,10 +662,10 @@ function comboId(indices: number[]): number {
 }
 
 function buildText(indices: number[], areaName: string): string {
-  const [si, oi, ti, wi, pi, ci, li, ji, capi, cvi, fi] = indices;
+  const [si, oi, ti, wi, pi, ci, li, hti, ji, capi, cvi, fi] = indices;
 
   if (formatChoices[fi] === "short") {
-    const raw = `${cap(oneLiners[li].replaceAll("{service}", services[si]))}.`;
+    const raw = `${cap(oneLiners[li].replaceAll("{service}", oneLinerServices[hti]))}.`;
     return capitalizationStyles[capi](raw);
   }
 
@@ -685,6 +732,7 @@ export function randomCandidate(areaName: string): ReviewCandidate {
     : randInt(closingVisibility.length);
 
   const li = randInt(oneLiners.length);
+  const hti = randInt(oneLinerServices.length);
 
   const indices = [
     si,
@@ -694,6 +742,7 @@ export function randomCandidate(areaName: string): ReviewCandidate {
     pi,
     ci,
     li,
+    hti,
     randInt(joinVariants.length),
     randInt(capitalizationStyles.length),
     cvi,
