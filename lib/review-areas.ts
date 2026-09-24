@@ -24,12 +24,12 @@ export const reviewAreas: ReviewArea[] = [
   { slug: "white-rock", name: "White Rock", googleReviewUrl: "https://www.google.com/maps/search/?api=1&query=Mr.+Drain+Plumber&query_place_id=ChIJp-vcSn938ooRWPXqTWMRJDc" },
   { slug: "port-moody", name: "Port Moody", googleReviewUrl: "https://www.google.com/maps/search/?api=1&query=Mr.+Drain+Plumber&query_place_id=ChIJJfuZFbmReicRyt1msBGUdOQ" },
   { slug: "pitt-meadows", name: "Pitt Meadows", googleReviewUrl: "https://www.google.com/maps/search/?api=1&query=Mr.+Drain+Plumber&query_place_id=ChIJL7a_gVGbjkERQjHM7GEQqSY" },
-  { slug: "stonebridge", name: "Stonebridge", googleReviewUrl: "https://search.google.com/local/writereview?placeid=PLACEHOLDER" },
-  { slug: "college-park", name: "College Park", googleReviewUrl: "https://search.google.com/local/writereview?placeid=PLACEHOLDER" },
-  { slug: "brighton", name: "Brighton", googleReviewUrl: "https://search.google.com/local/writereview?placeid=PLACEHOLDER" },
-  { slug: "rosewood", name: "Rosewood", googleReviewUrl: "https://search.google.com/local/writereview?placeid=PLACEHOLDER" },
-  { slug: "martensville", name: "Martensville", googleReviewUrl: "https://search.google.com/local/writereview?placeid=PLACEHOLDER" },
-  { slug: "warman", name: "Warman", googleReviewUrl: "https://search.google.com/local/writereview?placeid=PLACEHOLDER" },
+  { slug: "stonebridge", name: "Stonebridge", googleReviewUrl: "https://www.google.com/maps/search/?api=1&query=Mr.+Drain+Plumber+of+Stonebridge+Saskatoon&query_place_id=ChIJkSaQ037xBFMRi9m4SJXEscs" },
+  { slug: "college-park", name: "College Park", googleReviewUrl: "https://www.google.com/maps/search/?api=1&query=Mr.+Drain+Plumber+of+College+Park+Saskatoon&query_place_id=ChIJk4CEWGPzBFMRQcUnhykcgI8" },
+  { slug: "brighton", name: "Brighton", googleReviewUrl: "https://www.google.com/maps/search/?api=1&query=Mr.+Drain+Plumber+of+Brighton+Saskatoon&query_place_id=ChIJmay3E_DzBFMRPfVAd4VDneM" },
+  { slug: "rosewood", name: "Rosewood", googleReviewUrl: "https://www.google.com/maps/search/?api=1&query=Mr.+Drain+Plumber+of+Rosewood+Saskatoon&query_place_id=ChIJIdLDOqjzBFMRagEjXg6gw3s" },
+  { slug: "martensville", name: "Martensville", googleReviewUrl: "https://www.google.com/maps/search/?api=1&query=Mr.+Drain+Plumber+of+Martensville&query_place_id=ChIJ4ytmnLFdBFMR2G-dPK8W6Gs" },
+  { slug: "warman", name: "Warman", googleReviewUrl: "https://www.google.com/maps/search/?api=1&query=Mr.+Drain+Plumber+of+Warman&query_place_id=ChIJV5mPCWtdBFMRCwOBSczldnM" },
 ];
 
 export function getReviewAreaBySlug(slug: string) {
