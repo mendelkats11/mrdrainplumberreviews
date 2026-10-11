@@ -624,7 +624,7 @@ const contentPools = [
   oneLiners,
   oneLinerServices,
 ] as const;
-const CONTENT_DIMS = contentPools.map((p) => p.length);
+export const CONTENT_DIMS = contentPools.map((p) => p.length);
 
 // 75% of reviews use the short one-liner format instead of the full
 // multi-clause one — the long format read as bulky, and most real

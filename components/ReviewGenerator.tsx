@@ -53,8 +53,12 @@ export default function ReviewGenerator({
         contentKey: candidate.contentKey,
       }),
     });
-    if (!res.ok) return false;
+    // A non-2xx (rate limited, rejected payload, server error) is a real
+    // failure, not "that review was already taken" — throwing here stops
+    // the retry loop below instead of firing up to 25 more requests.
+    if (!res.ok) throw new Error(`claim failed: ${res.status}`);
     const data = await res.json();
+    if (data.full) throw new Error("ledger full");
     return Boolean(data.ok);
   }
 
