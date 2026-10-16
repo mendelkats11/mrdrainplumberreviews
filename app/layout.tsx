@@ -5,6 +5,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Leave a Review | Mr. Drain Plumber",
   description: "Scan, get a suggested review, leave it on Google.",
+  // These pages are only meant for people holding the QR code or link, so
+  // keep search engines from listing them.
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

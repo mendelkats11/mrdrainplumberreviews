@@ -9,10 +9,12 @@ export default function ReviewGenerator({
   areaSlug,
   areaName,
   googleReviewUrl,
+  testMode = false,
 }: {
   areaSlug: string;
   areaName: string;
   googleReviewUrl: string;
+  testMode?: boolean;
 }) {
   const [candidate, setCandidate] = useState<ReviewCandidate | null>(null);
   const [copied, setCopied] = useState(false);
@@ -51,6 +53,8 @@ export default function ReviewGenerator({
         id: candidate.id,
         text: candidate.text,
         contentKey: candidate.contentKey,
+        // The server only honors this for a logged-in admin.
+        test: testMode,
       }),
     });
     // A non-2xx (rate limited, rejected payload, server error) is a real

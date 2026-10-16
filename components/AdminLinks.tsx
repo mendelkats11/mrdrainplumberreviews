@@ -127,7 +127,27 @@ export default function AdminLinks({ rows }: { rows: AreaLinkRow[] }) {
           Log out
         </button>
       </div>
-      <ul className="mt-5 flex flex-col gap-3">
+      <section className="mt-5 rounded-2xl border border-border bg-surface p-4">
+        <h2 className="font-semibold text-text">All review pages</h2>
+        <p className="mt-1 text-sm text-text-muted">
+          Opens each page in test mode: Copy and &ldquo;Leave your review on Google&rdquo; work
+          normally, but nothing is recorded, so testing won&apos;t use up any reviews.
+        </p>
+        <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {rows.map((row) => (
+            <li key={row.slug}>
+              <a
+                href={`/${row.slug}?test=1`}
+                className="block cursor-pointer rounded-lg border border-border px-3 py-2 text-center text-sm text-text transition hover:border-teal-bright"
+              >
+                {row.name}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <h2 className="mt-8 text-lg font-semibold text-text">Edit links</h2>
+      <ul className="mt-3 flex flex-col gap-3">
         {rows.map((row) => (
           <Row key={row.slug} row={row} />
         ))}

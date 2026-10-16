@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
+import { SESSION_COOKIE, verifySessionToken } from "@/lib/admin-auth";
 import { getReviewAreaBySlug } from "@/lib/review-areas";
 import { CONTENT_DIMS, TOTAL_COMBINATIONS } from "@/lib/review-generator";
 
@@ -139,7 +140,13 @@ export async function POST(req: NextRequest) {
   if (rawBody.length > MAX_BODY_BYTES) {
     return NextResponse.json({ ok: false, error: "payload too large" }, { status: 413 });
   }
-  let body: { area?: unknown; id?: unknown; text?: unknown; contentKey?: unknown } | null = null;
+  let body: {
+    area?: unknown;
+    id?: unknown;
+    text?: unknown;
+    contentKey?: unknown;
+    test?: unknown;
+  } | null = null;
   try {
     body = JSON.parse(rawBody);
   } catch {
@@ -164,6 +171,14 @@ export async function POST(req: NextRequest) {
     !validContentKey(contentKey)
   ) {
     return NextResponse.json({ ok: false, error: "invalid payload" }, { status: 400 });
+  }
+
+  // Test mode (admin only): lets the owner try Copy on any page without
+  // using up a real review. The flag is honored ONLY with a valid admin
+  // session, checked here on the server — a visitor sending test:true
+  // just gets a normal claim.
+  if (body?.test === true && verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value)) {
+    return NextResponse.json({ ok: true, test: true });
   }
 
   const result = await enqueue(async () => {
