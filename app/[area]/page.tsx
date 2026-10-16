@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/admin-auth";
@@ -12,6 +13,19 @@ export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
   return reviewAreas.map((a) => ({ area: a.slug }));
+}
+
+// Each business gets its own tab title instead of always saying Mr. Drain
+// Plumber.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ area: string }>;
+}): Promise<Metadata> {
+  const reviewArea = getReviewAreaBySlug((await params).area);
+  return {
+    title: `Leave a Review | ${reviewArea?.kind === "renovation" ? reviewArea.name : "Mr. Drain Plumber"}`,
+  };
 }
 
 export default async function ReviewAreaPage({
@@ -43,23 +57,55 @@ export default async function ReviewAreaPage({
           Test mode: copying here isn&apos;t recorded and won&apos;t use up any reviews.
         </p>
       )}
-      <div>
-        <p className="text-sm uppercase tracking-wide text-text-muted">Mr. Drain Plumber</p>
-        <h1 className="mt-2 font-semibold text-2xl">
-          How did we do in {reviewArea.name}?
-        </h1>
-        <p className="mt-2 max-w-md text-text-muted">
-          Feel free to use this as a starting point, edit it however you like, or
-          write your own. Copy it, then leave it on Google.
-        </p>
-      </div>
+      {reviewArea.kind === "plumbing" ? (
+        <>
+          <div>
+            <p className="text-sm uppercase tracking-wide text-text-muted">Mr. Drain Plumber</p>
+            <h1 className="mt-2 font-semibold text-2xl">
+              How did we do in {reviewArea.name}?
+            </h1>
+            <p className="mt-2 max-w-md text-text-muted">
+              Feel free to use this as a starting point, edit it however you like, or
+              write your own. Copy it, then leave it on Google.
+            </p>
+          </div>
 
-      <ReviewGenerator
-        areaSlug={reviewArea.slug}
-        areaName={reviewArea.name}
-        googleReviewUrl={googleReviewUrl}
-        testMode={testMode}
-      />
+          <ReviewGenerator
+            areaSlug={reviewArea.slug}
+            areaName={reviewArea.name}
+            googleReviewUrl={googleReviewUrl}
+            testMode={testMode}
+          />
+        </>
+      ) : (
+        // Renovation businesses don't have suggested-review text yet (each
+        // gets its own phrase database later), so until then the page just
+        // sends visitors to the Google profile.
+        <>
+          <div>
+            <p className="max-w-md text-sm uppercase tracking-wide text-text-muted">
+              {reviewArea.name}
+            </p>
+            <h1 className="mt-2 font-semibold text-2xl">How did we do?</h1>
+            <p className="mt-2 max-w-md text-text-muted">
+              We&apos;d love to hear about your experience. Tap below to leave your review on
+              Google.
+            </p>
+          </div>
+          {googleReviewUrl ? (
+            <a
+              href={googleReviewUrl}
+              className="flex w-full max-w-xl cursor-pointer items-center justify-center rounded-full bg-teal px-5 py-3 text-center font-medium text-text transition hover:bg-teal-bright"
+            >
+              Leave your review on Google →
+            </a>
+          ) : (
+            <p className="max-w-md text-sm text-text-muted">
+              This page isn&apos;t ready yet. Please check back soon.
+            </p>
+          )}
+        </>
+      )}
     </main>
   );
 }

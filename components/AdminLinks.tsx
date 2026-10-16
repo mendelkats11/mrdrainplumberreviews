@@ -51,7 +51,9 @@ function Row({ row }: { row: AreaLinkRow }) {
     <li className="rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="font-semibold text-text">{row.name}</h2>
-        <span className="text-xs text-text-muted">{overridden ? "Custom link" : "Original link"}</span>
+        <span className="shrink-0 text-xs text-text-muted">
+          {overridden ? "Custom link" : row.defaultUrl ? "Original link" : "No link yet"}
+        </span>
       </div>
       <label htmlFor={`url-${row.slug}`} className="sr-only">
         Google review link for {row.name}
@@ -61,6 +63,7 @@ function Row({ row }: { row: AreaLinkRow }) {
         type="url"
         value={url}
         onChange={(e) => setUrl(e.target.value)}
+        placeholder="Paste the Google review link"
         spellCheck={false}
         className="mt-3 w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text outline-none focus:border-brass"
       />
@@ -83,14 +86,16 @@ function Row({ row }: { row: AreaLinkRow }) {
             Reset to original
           </button>
         )}
-        <a
-          href={saved}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="cursor-pointer text-sm text-teal-bright hover:underline"
-        >
-          Test link
-        </a>
+        {saved && (
+          <a
+            href={saved}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cursor-pointer text-sm text-teal-bright hover:underline"
+          >
+            Test link
+          </a>
+        )}
         <a href={`/${row.slug}`} className="cursor-pointer text-sm text-text-muted hover:text-text">
           View page
         </a>
@@ -104,8 +109,21 @@ function Row({ row }: { row: AreaLinkRow }) {
   );
 }
 
+// "RenoMake ... of Oakville" -> "Oakville"; plumbing areas are already short.
+function shortName(row: AreaLinkRow): string {
+  const prefix = `${row.business} of `;
+  return row.name.startsWith(prefix) ? row.name.slice(prefix.length) : row.name;
+}
+
 export default function AdminLinks({ rows }: { rows: AreaLinkRow[] }) {
   const router = useRouter();
+
+  const groups = rows.reduce<{ business: string; rows: AreaLinkRow[] }[]>((acc, row) => {
+    const group = acc.find((g) => g.business === row.business);
+    if (group) group.rows.push(row);
+    else acc.push({ business: row.business, rows: [row] });
+    return acc;
+  }, []);
 
   async function logout() {
     await fetch("/api/admin/logout", { method: "POST" }).catch(() => undefined);
@@ -133,25 +151,35 @@ export default function AdminLinks({ rows }: { rows: AreaLinkRow[] }) {
           Opens each page in test mode: Copy and &ldquo;Leave your review on Google&rdquo; work
           normally, but nothing is recorded, so testing won&apos;t use up any reviews.
         </p>
-        <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {rows.map((row) => (
-            <li key={row.slug}>
-              <a
-                href={`/${row.slug}?test=1`}
-                className="block cursor-pointer rounded-lg border border-border px-3 py-2 text-center text-sm text-text transition hover:border-teal-bright"
-              >
-                {row.name}
-              </a>
-            </li>
-          ))}
-        </ul>
+        {groups.map((group) => (
+          <div key={group.business} className="mt-4">
+            <h3 className="text-sm font-medium text-text-muted">{group.business}</h3>
+            <ul className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {group.rows.map((row) => (
+                <li key={row.slug}>
+                  <a
+                    href={`/${row.slug}?test=1`}
+                    className="block cursor-pointer rounded-lg border border-border px-3 py-2 text-center text-sm text-text transition hover:border-teal-bright"
+                  >
+                    {shortName(row)}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </section>
       <h2 className="mt-8 text-lg font-semibold text-text">Edit links</h2>
-      <ul className="mt-3 flex flex-col gap-3">
-        {rows.map((row) => (
-          <Row key={row.slug} row={row} />
-        ))}
-      </ul>
+      {groups.map((group) => (
+        <div key={group.business} className="mt-4">
+          <h3 className="text-sm font-medium text-text-muted">{group.business}</h3>
+          <ul className="mt-2 flex flex-col gap-3">
+            {group.rows.map((row) => (
+              <Row key={row.slug} row={row} />
+            ))}
+          </ul>
+        </div>
+      ))}
     </div>
   );
 }

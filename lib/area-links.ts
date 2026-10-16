@@ -80,6 +80,7 @@ export async function getAreaUrl(slug: string): Promise<string | undefined> {
 export interface AreaLinkRow {
   slug: string;
   name: string;
+  business: string;
   url: string;
   defaultUrl: string;
   overridden: boolean;
@@ -93,6 +94,7 @@ export async function getAllAreaLinks(): Promise<AreaLinkRow[]> {
     return {
       slug: a.slug,
       name: a.name,
+      business: a.business,
       url: usable ?? a.googleReviewUrl,
       defaultUrl: a.googleReviewUrl,
       overridden: Boolean(usable),
