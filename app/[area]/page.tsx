@@ -1,6 +1,12 @@
 import { notFound } from "next/navigation";
 import { getReviewAreaBySlug, reviewAreas } from "@/lib/review-areas";
 import ReviewGenerator from "@/components/ReviewGenerator";
+import { getAreaUrl } from "@/lib/area-links";
+
+// Rendered per request (not at build time) so a link edited in /admin
+// takes effect immediately, instead of being frozen into the build. It
+// also stops Hostinger's CDN from caching a stale copy of the page.
+export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
   return reviewAreas.map((a) => ({ area: a.slug }));
@@ -14,6 +20,7 @@ export default async function ReviewAreaPage({
   const { area } = await params;
   const reviewArea = getReviewAreaBySlug(area);
   if (!reviewArea) notFound();
+  const googleReviewUrl = (await getAreaUrl(reviewArea.slug)) ?? reviewArea.googleReviewUrl;
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-6 px-4 py-16 text-center">
@@ -31,7 +38,7 @@ export default async function ReviewAreaPage({
       <ReviewGenerator
         areaSlug={reviewArea.slug}
         areaName={reviewArea.name}
-        googleReviewUrl={reviewArea.googleReviewUrl}
+        googleReviewUrl={googleReviewUrl}
       />
     </main>
   );

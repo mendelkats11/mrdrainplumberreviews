@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -9,7 +10,14 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen antialiased">{children}</body>
+      <body className="min-h-screen antialiased">
+        {children}
+        <footer className="px-4 pb-6 text-center">
+          <Link href="/admin" className="text-xs text-text-muted/50 transition hover:text-text-muted">
+            Admin
+          </Link>
+        </footer>
+      </body>
     </html>
   );
 }
