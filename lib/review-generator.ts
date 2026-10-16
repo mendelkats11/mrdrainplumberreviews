@@ -1,24 +1,9 @@
-// Combinatorial review-text generator. Eight CONTENT pools (service,
-// opening, timeliness, workmanship, pricing, closing, one-liner,
-// one-liner-service) supply the actual substance of a review; four
-// COSMETIC pools (how clauses are joined, capitalization style, whether
-// the closing shows, and whether the whole review uses the short
-// one-liner format) only affect formatting, never substance. The short
-// one-liner format is now the dominant case (~75% of reviews, see
-// formatChoices) — only the one-liner-service and one-liner phrase
-// actually render for it; the other 6 content indices are still rolled
-// (for a consistent contentKey shape) but unused.
-//
-// Every candidate carries a numeric id (for reference/audit) and a
-// contentKey — the 8 content-pool indices it was built from. The
-// server-side ledger (app/api/claim-review/route.ts) enforces two rules:
-// no more than 4 of those 8 phrases may match anything already used, AND
-// (as a backstop for the short format, where most content indices go
-// unused) the exact rendered text can never repeat either. That's what
-// actually guarantees no duplicates AND no near-duplicates — not this
-// file, which only supplies candidates and never decides what's "used."
-// A candidate only becomes "used" when it's actually copied; regenerating
-// without copying never touches the ledger.
+// Plumbing (Mr. Drain Plumber) phrase pools. The generation mechanism
+// (formats, joins, capitalization, location mentions) lives in
+// lib/review-engine.ts and is shared with the renovation businesses; this
+// file is only the plumbing wording plus one engine built from it.
+
+import { createEngine } from "@/lib/review-engine";
 
 export const services = [
   "bathroom renovation",
@@ -509,14 +494,6 @@ const closings = [
   "I'll definitely be calling Mr. Drain Plumber {area} again",
 ];
 
-function cap(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
-function uncap(s: string): string {
-  return s.charAt(0).toLowerCase() + s.slice(1);
-}
-
 // Complete, self-contained one-line reviews — used for a minority of
 // generations instead of the full multi-clause format, so not every
 // review reads like a mini essay. {service} gets substituted in.
@@ -548,206 +525,19 @@ const oneLiners = [
   "cant complain about the {service}, quick, fair, and done right",
 ];
 
-interface Parts {
-  opening: string;
-  timeliness: string;
-  workmanship: string;
-  pricing: string;
-  closing: string;
-}
-
-// Different ways of stitching the 5 clauses together. These vary the
-// ORDER the clauses appear in, not just punctuation — every review
-// previously followed the exact same skeleton (opening, then "They
-// [timeliness]", then workmanship, then pricing), which reads as
-// obviously templated no matter how much the wording underneath varies.
-// Moving "They [timeliness]" to a different position each time (or a
-// clause other than timeliness leading right after the opening) breaks
-// that fixed shape. `showClosing` is threaded through so the closing
-// sentence can be dropped entirely (see closingVisibility below) — a
-// review that always ends on a tidy wrap-up line reads as formulaic.
-// This is cosmetic only: it never changes which phrases were used.
-const joinVariants: Array<(p: Parts, showClosing: boolean) => string> = [
-  (p, showClosing) =>
-    `${cap(p.opening)}. They ${p.timeliness}. ${cap(p.workmanship)}. ${cap(p.pricing)}.${showClosing ? ` ${cap(p.closing)}.` : ""}`,
-  (p, showClosing) =>
-    `${cap(p.opening)}. ${cap(p.workmanship)}. They ${p.timeliness}. ${cap(p.pricing)}.${showClosing ? ` ${cap(p.closing)}.` : ""}`,
-  (p, showClosing) =>
-    `${cap(p.opening)}. ${cap(p.pricing)}. They ${p.timeliness}. ${cap(p.workmanship)}.${showClosing ? ` ${cap(p.closing)}.` : ""}`,
-  (p, showClosing) =>
-    `${cap(p.opening)}. ${cap(p.workmanship)}. ${cap(p.pricing)}. They ${p.timeliness}.${showClosing ? ` ${cap(p.closing)}.` : ""}`,
-  (p, showClosing) =>
-    `${cap(p.opening)}, they ${p.timeliness}. ${cap(p.workmanship)}. ${cap(p.pricing)}.${showClosing ? ` ${cap(p.closing)}.` : ""}`,
-  (p, showClosing) =>
-    `${cap(p.opening)}. Honestly, ${uncap(p.workmanship)}. They ${p.timeliness} too. ${cap(p.pricing)}.${showClosing ? ` ${cap(p.closing)}.` : ""}`,
-  (p, showClosing) =>
-    `${cap(p.opening)}. On top of that, ${uncap(p.pricing)}. ${cap(p.workmanship)}. They ${p.timeliness} as well.${showClosing ? ` ${cap(p.closing)}.` : ""}`,
-];
-
-// About 1 in 3 reviews skip the closing sentence entirely — always ending
-// on a neat wrap-up line is one of the more obvious "botty" tells.
-const closingVisibility: boolean[] = [true, true, false];
-
-// Casual capitalization, sprinkled in rather than baked into every
-// review. Weighted so "proper" is overwhelmingly the common case — most
-// reviews should read cleanly, only a rare few should look dashed off on
-// a phone. NORMAL_WEIGHT normal entries per 1 of each casual variant.
-const NORMAL_WEIGHT = 18;
-const capitalizationStyles: Array<(text: string) => string> = [
-  ...Array.from({ length: NORMAL_WEIGHT }, () => (text: string) => text),
-  (text) => text.charAt(0).toLowerCase() + text.slice(1),
-  (text) => text.toLowerCase(),
-  (text) => sprinkleOneSentenceLower(text),
-];
-
-function sprinkleOneSentenceLower(text: string): string {
-  const boundaries: number[] = [];
-  for (let i = 0; i < text.length - 2; i++) {
-    if (text[i] === "." && text[i + 1] === " ") boundaries.push(i + 2);
-  }
-  if (boundaries.length === 0) {
-    return text.charAt(0).toLowerCase() + text.slice(1);
-  }
-  const pos = boundaries[randInt(boundaries.length)];
-  return text.slice(0, pos) + text.charAt(pos).toLowerCase() + text.slice(pos + 1);
-}
-
-// Content pools — each index here is one "phrase" for the purposes of
-// the 4-matching-phrases rule.
-const contentPools = [
+const engine = createEngine({
   services,
+  oneLinerServices,
   openings,
   timeliness,
   workmanship,
   pricing,
   closings,
   oneLiners,
-  oneLinerServices,
-] as const;
-export const CONTENT_DIMS = contentPools.map((p) => p.length);
+});
 
-// 75% of reviews use the short one-liner format instead of the full
-// multi-clause one — the long format read as bulky, and most real
-// reviews for a single job are one sentence, not a mini essay.
-const formatChoices = ["long", "short", "short", "short"] as const;
-
-// Cosmetic pools — never count toward phrase-matching.
-const cosmeticPools = [joinVariants, capitalizationStyles, closingVisibility, formatChoices] as const;
-const COSMETIC_DIMS = cosmeticPools.map((p) => p.length);
-
-const ALL_DIMS = [...CONTENT_DIMS, ...COSMETIC_DIMS];
-
-export const TOTAL_CONTENT_COMBINATIONS = CONTENT_DIMS.reduce((a, b) => a * b, 1);
-export const TOTAL_COMBINATIONS = ALL_DIMS.reduce((a, b) => a * b, 1);
-
-export interface ReviewCandidate {
-  id: number;
-  text: string;
-  // The 8 content-pool indices this candidate was built from — sent to
-  // the server so it can check phrase overlap against everything
-  // already used, in addition to an exact-text check.
-  contentKey: number[];
-}
-
-function randInt(max: number): number {
-  return Math.floor(Math.random() * max);
-}
-
-function comboId(indices: number[]): number {
-  let id = 0;
-  for (let i = 0; i < indices.length; i++) {
-    id = id * ALL_DIMS[i] + indices[i];
-  }
-  return id;
-}
-
-function buildText(indices: number[], areaName: string): string {
-  const [si, oi, ti, wi, pi, ci, li, hti, ji, capi, cvi, fi] = indices;
-
-  if (formatChoices[fi] === "short") {
-    const raw = `${cap(oneLiners[li].replaceAll("{service}", oneLinerServices[hti]))}.`;
-    return capitalizationStyles[capi](raw);
-  }
-
-  const opening = openings[oi]
-    .replaceAll("{service}", services[si])
-    .replaceAll("{area}", areaName);
-  const parts: Parts = {
-    opening,
-    timeliness: timeliness[ti].replaceAll("{area}", areaName),
-    workmanship: workmanship[wi].replaceAll("{area}", areaName),
-    pricing: pricing[pi].replaceAll("{area}", areaName),
-    closing: closings[ci].replaceAll("{area}", areaName),
-  };
-  const raw = joinVariants[ji](parts, closingVisibility[cvi]);
-  return capitalizationStyles[capi](raw);
-}
-
-// One "Mr. Drain Plumber {area}" keyword mention (good for local SEO)
-// shows up in roughly 1 in 7 reviews, and never in more than one of the 5
-// eligible pools at once — showing it in every pool simultaneously, or
-// every review, would read as spammy keyword-stuffing instead of a
-// genuine mention. The location-mention variant is always the LAST entry
-// in each of openings/timeliness/workmanship/pricing/closings, so normal
-// random draws exclude it (`length - 1`) unless this roll specifically
-// selects it.
-const LOCATION_MENTION_CHANCE = 7;
-const LOCATION_ELIGIBLE_SLOTS = 5;
-
-export function randomCandidate(areaName: string): ReviewCandidate {
-  const si = randInt(services.length);
-  let oi = randInt(openings.length - 1);
-  let ti = randInt(timeliness.length - 1);
-  let wi = randInt(workmanship.length - 1);
-  let pi = randInt(pricing.length - 1);
-  let ci = randInt(closings.length - 1);
-
-  let closingHasLocationMention = false;
-
-  if (randInt(LOCATION_MENTION_CHANCE) === 0) {
-    switch (randInt(LOCATION_ELIGIBLE_SLOTS)) {
-      case 0:
-        oi = openings.length - 1;
-        break;
-      case 1:
-        ti = timeliness.length - 1;
-        break;
-      case 2:
-        wi = workmanship.length - 1;
-        break;
-      case 3:
-        pi = pricing.length - 1;
-        break;
-      default:
-        ci = closings.length - 1;
-        closingHasLocationMention = true;
-        break;
-    }
-  }
-
-  // Don't let the closing-omission roll silently swallow a location
-  // mention that landed in the closing slot — force it visible instead.
-  const cvi = closingHasLocationMention
-    ? closingVisibility.findIndex((visible) => visible)
-    : randInt(closingVisibility.length);
-
-  const li = randInt(oneLiners.length);
-  const hti = randInt(oneLinerServices.length);
-
-  const indices = [
-    si,
-    oi,
-    ti,
-    wi,
-    pi,
-    ci,
-    li,
-    hti,
-    randInt(joinVariants.length),
-    randInt(capitalizationStyles.length),
-    cvi,
-    randInt(formatChoices.length),
-  ];
-  const contentKey = indices.slice(0, CONTENT_DIMS.length);
-  return { id: comboId(indices), text: buildText(indices, areaName), contentKey };
-}
+export const randomCandidate = engine.randomCandidate;
+export const CONTENT_DIMS = engine.CONTENT_DIMS;
+export const TOTAL_COMBINATIONS = engine.TOTAL_COMBINATIONS;
+export const TOTAL_CONTENT_COMBINATIONS = engine.TOTAL_CONTENT_COMBINATIONS;
+export type { ReviewCandidate } from "@/lib/review-engine";

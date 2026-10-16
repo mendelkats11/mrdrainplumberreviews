@@ -3,7 +3,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/admin-auth";
 import { getReviewAreaBySlug } from "@/lib/review-areas";
-import { CONTENT_DIMS, TOTAL_COMBINATIONS } from "@/lib/review-generator";
+import { engineKeyFor, getEngineByKey } from "@/lib/engines";
 
 // Server-side ledger of every review that's actually been copied (i.e. a
 // visitor intends to post it). This is what makes duplicates impossible,
@@ -40,6 +40,9 @@ interface UsedRecord {
   area: string;
   text: string;
   contentKey: number[];
+  // Which business's phrase pools the contentKey indexes into. Records
+  // from before this field existed are plumbing.
+  engine?: string;
   usedAt: string;
 }
 
@@ -95,11 +98,11 @@ function rateLimited(ip: string): boolean {
   return recent.length > RATE_LIMIT_MAX_REQUESTS;
 }
 
-function validContentKey(key: unknown): key is number[] {
+function validContentKey(key: unknown, dims: number[]): key is number[] {
   return (
     Array.isArray(key) &&
-    key.length === CONTENT_DIMS.length &&
-    key.every((n, i) => Number.isInteger(n) && n >= 0 && n < CONTENT_DIMS[i])
+    key.length === dims.length &&
+    key.every((n, i) => Number.isInteger(n) && n >= 0 && n < dims[i])
   );
 }
 
@@ -158,17 +161,23 @@ export async function POST(req: NextRequest) {
   const text = body?.text;
   const contentKey = body?.contentKey;
 
+  // Each business has its own phrase pools, so the id and contentKey are
+  // checked against the engine for THIS page's business.
+  const areaInfo = typeof area === "string" ? getReviewAreaBySlug(area) : undefined;
+  const engine = areaInfo ? getEngineByKey(engineKeyFor(areaInfo)) : undefined;
+
   if (
     typeof area !== "string" ||
-    !getReviewAreaBySlug(area) ||
+    !areaInfo ||
+    !engine ||
     typeof id !== "number" ||
     !Number.isInteger(id) ||
     id < 0 ||
-    id >= TOTAL_COMBINATIONS ||
+    id >= engine.TOTAL_COMBINATIONS ||
     typeof text !== "string" ||
     text.length === 0 ||
     text.length > MAX_TEXT_LENGTH ||
-    !validContentKey(contentKey)
+    !validContentKey(contentKey, engine.CONTENT_DIMS)
   ) {
     return NextResponse.json({ ok: false, error: "invalid payload" }, { status: 400 });
   }
@@ -186,13 +195,20 @@ export async function POST(req: NextRequest) {
     if (used.length >= MAX_LEDGER_ENTRIES) {
       return { ok: false as const, full: true as const };
     }
+    // contentKey positions only mean something within one business's own
+    // pools, so the phrase-overlap rule compares against that business
+    // only. Exact-text repeats are rejected across all businesses.
+    const engineKey = engineKeyFor(areaInfo);
     const alreadyUsed = used.some(
-      (r) => r.text === text || matchingPhraseCount(r.contentKey, contentKey) > MAX_MATCHING_PHRASES,
+      (r) =>
+        r.text === text ||
+        ((r.engine ?? "plumbing") === engineKey &&
+          matchingPhraseCount(r.contentKey, contentKey) > MAX_MATCHING_PHRASES),
     );
     if (alreadyUsed) {
       return { ok: false as const };
     }
-    used.push({ id, area, text, contentKey, usedAt: new Date().toISOString() });
+    used.push({ id, area, text, contentKey, engine: engineKey, usedAt: new Date().toISOString() });
     await writeUsed(used);
     return { ok: true as const };
   });

@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/admin-auth";
 import { getReviewAreaBySlug, reviewAreas } from "@/lib/review-areas";
 import ReviewGenerator from "@/components/ReviewGenerator";
+import { engineKeyFor } from "@/lib/engines";
 import { getAreaUrl } from "@/lib/area-links";
 
 // Rendered per request (not at build time) so a link edited in /admin
@@ -78,9 +79,8 @@ export default async function ReviewAreaPage({
           />
         </>
       ) : (
-        // Renovation businesses don't have suggested-review text yet (each
-        // gets its own phrase database later), so until then the page just
-        // sends visitors to the Google profile.
+        // Renovation businesses use the same instant generator as the
+        // plumbing pages, with each business's own phrase pools.
         <>
           <div>
             <p className="max-w-md text-sm uppercase tracking-wide text-text-muted">
@@ -88,22 +88,18 @@ export default async function ReviewAreaPage({
             </p>
             <h1 className="mt-2 font-semibold text-2xl">How did we do?</h1>
             <p className="mt-2 max-w-md text-text-muted">
-              We&apos;d love to hear about your experience. Tap below to leave your review on
-              Google.
+              Feel free to use this as a starting point, edit it however you like, or
+              write your own. Copy it, then leave it on Google.
             </p>
           </div>
-          {googleReviewUrl ? (
-            <a
-              href={googleReviewUrl}
-              className="flex w-full max-w-xl cursor-pointer items-center justify-center rounded-full bg-teal px-5 py-3 text-center font-medium text-text transition hover:bg-teal-bright"
-            >
-              Leave your review on Google →
-            </a>
-          ) : (
-            <p className="max-w-md text-sm text-text-muted">
-              This page isn&apos;t ready yet. Please check back soon.
-            </p>
-          )}
+
+          <ReviewGenerator
+            areaSlug={reviewArea.slug}
+            areaName={reviewArea.city ?? reviewArea.name}
+            googleReviewUrl={googleReviewUrl}
+            testMode={testMode}
+            engineKey={engineKeyFor(reviewArea)}
+          />
         </>
       )}
     </main>

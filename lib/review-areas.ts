@@ -9,6 +9,10 @@ export interface ReviewArea {
   // today; "renovation" pages have none yet (each business is getting its
   // own), so they just send visitors to the Google profile.
   kind: "plumbing" | "renovation";
+  // Renovation pages only: which business's phrase pools to use, and the
+  // city for the location mention.
+  brand?: "renomake" | "remodela" | "forge";
+  city?: string;
   // Empty until a link is set in the admin screen; the page then simply
   // hides its Google button. Format, once known:
   // https://www.google.com/maps/search/?api=1&query=Mr.+Drain+Plumber&query_place_id=YOUR_PLACE_ID
@@ -46,7 +50,11 @@ const plumbingAreas: AreaSeed[] = [
 // The renovation businesses: three brands, each with a separate Google
 // Business Profile per city. `listing` is the profile's exact Google name.
 // Links start empty and are set from the admin screen.
-const renovationBrands = [
+const renovationBrands: {
+  key: "renomake" | "remodela" | "forge";
+  business: string;
+  cities: string[];
+}[] = [
   {
     key: "renomake",
     business: "RenoMake Kitchen Renovations and Bathroom Remodeling",
@@ -70,6 +78,8 @@ const renovationAreas: ReviewArea[] = renovationBrands.flatMap((brand) =>
     name: `${brand.business} of ${city}`,
     business: brand.business,
     kind: "renovation" as const,
+    brand: brand.key,
+    city,
     googleReviewUrl: "",
   })),
 );

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { randomCandidate, type ReviewCandidate } from "@/lib/review-generator";
+import type { ReviewCandidate } from "@/lib/review-engine";
+import { getEngineByKey, type EngineKey } from "@/lib/engines";
 
 const MAX_CLAIM_ATTEMPTS = 25;
 
@@ -10,12 +11,15 @@ export default function ReviewGenerator({
   areaName,
   googleReviewUrl,
   testMode = false,
+  engineKey = "plumbing",
 }: {
   areaSlug: string;
   areaName: string;
   googleReviewUrl: string;
   testMode?: boolean;
+  engineKey?: EngineKey;
 }) {
+  const { randomCandidate } = getEngineByKey(engineKey);
   const [candidate, setCandidate] = useState<ReviewCandidate | null>(null);
   const [copied, setCopied] = useState(false);
   const [claiming, setClaiming] = useState(false);
@@ -26,7 +30,7 @@ export default function ReviewGenerator({
 
   useEffect(() => {
     setCandidate(randomCandidate(areaName));
-  }, [areaName]);
+  }, [areaName, randomCandidate]);
 
   function regenerate() {
     setCandidate((current) => {
@@ -168,14 +172,21 @@ export default function ReviewGenerator({
         </p>
       )}
 
-      {copied && (
-        <a
-          href={googleReviewUrl}
-          className="mt-4 flex cursor-pointer items-center justify-center rounded-full bg-teal px-5 py-3 text-center font-medium text-text transition hover:bg-teal-bright"
-        >
-          Leave your review on Google →
-        </a>
-      )}
+      {copied &&
+        (googleReviewUrl ? (
+          <a
+            href={googleReviewUrl}
+            className="mt-4 flex cursor-pointer items-center justify-center rounded-full bg-teal px-5 py-3 text-center font-medium text-text transition hover:bg-teal-bright"
+          >
+            Leave your review on Google →
+          </a>
+        ) : (
+          // No link set yet (set one in the admin screen). Without this,
+          // the button would point at an empty address.
+          <p className="mt-4 text-sm text-text-muted">
+            Your review is copied. Open our Google page and paste it in.
+          </p>
+        ))}
     </div>
   );
 }
