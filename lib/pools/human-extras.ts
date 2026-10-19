@@ -1,0 +1,171 @@
+// Wording shared by the renovation businesses, learned from the 20 rounds of
+// human edits (training/) and the follow-up questions. Each phrase is a
+// lowercase clause so the human engine can fuse it into a sentence with a
+// comma or "and". {brand} is the business name. No hyphens anywhere.
+
+// A short first sentence that gives the review a reason to exist: a delay,
+// a comparison, a recommendation from friends.
+export const backstories = [
+  "we had been putting this project off for a long time",
+  "we heard great things about them from friends before we reached out",
+  "we have dealt with other companies before, so we had high standards",
+  "this was our first time doing a renovation and we were nervous",
+  "we were tired of how our home looked and decided it was time",
+  "a few months ago we finally decided to get started",
+  "we got a few quotes before choosing {brand}",
+  "a friend of ours used {brand} and we wanted the same result",
+  "we had been looking at the old space for years",
+  "we were not sure who to trust with a project this size",
+  "our old space had been bugging us for a couple of years",
+  "we finally stopped saying we would get to it someday",
+  "we had a bad experience with another company a while back",
+  "we went back and forth for months on who to hire",
+  "we had a deadline because family was coming to visit",
+  "we moved in a while ago and the place needed a lot of work",
+  "a neighbour of ours recommended them",
+  "we found them online and the reviews convinced us to call",
+  "everything in the house was original and it really showed",
+  "we wanted something that would also add value to the house",
+  "we got three quotes and went with {brand}",
+  "i put off writing this for a few weeks but it deserves a review",
+  "we had a pretty clear idea of what we wanted going in",
+  "we were a little worried about having people in the house for weeks",
+  "we kept hearing horror stories about contractors so we were careful",
+];
+
+// Personal closers. They fuse with ", and" or stand alone as a sentence.
+export const personalClosers = [
+  "overall we had a great experience with them",
+  "overall i had a great experience with them",
+  "we are super happy with the results",
+  "we're really happy with how everything turned out",
+  "i would highly recommend them",
+  "we would definitely hire them again",
+  "we couldn't have asked for a better experience",
+  "our home looks stunning now",
+  "it turned out better than we imagined",
+  "i am happy we ended up going with {brand}",
+  "we have already recommended them to some friends",
+  "i'm super happy we went with them",
+  "we would not hesitate to call them again",
+  "they made a big project feel super doable",
+  "the whole thing was a lot less stressful than we expected",
+  "the finished space is exactly what we hoped for",
+  "we would not go anywhere else",
+  "honestly we could not be happier",
+  "it was money well spent",
+  "i'd recommend them to anyone",
+  "we're already thinking about our next project with them",
+  "we use the space every day and love it",
+  "friends who come over keep complimenting it",
+  "it was worth the wait",
+  "we wish we had done this sooner",
+  "we give them five stars",
+  "we want to thank the whole team again",
+  "it was definitely worth it",
+  "i'm glad we trusted them with it",
+  "it was a smooth experience from start to finish",
+  "we are so pleased with how it came out",
+  "we have no regrets at all",
+  "they earned our business",
+  "it's exactly what we pictured",
+  "everyone who has seen it asks who did the work",
+  "the whole family loves it",
+  "it feels like a different house",
+  "we got exactly what we paid for and then some",
+  "i would not think twice about hiring them again",
+  "we are still smiling every time we walk in",
+];
+
+// Afterthought fragments, used as ", and ____!" at the end of a review.
+export const tags = [
+  "great pricing as well",
+  "great scheduling as well",
+  "great communication as well",
+  "super clean work as well",
+  "a really friendly team as well",
+  "honest pricing as well",
+  "fast replies as well",
+  "great attention to detail as well",
+  "good value as well",
+  "a tidy job site as well",
+  "fair pricing too",
+  "great ideas too",
+  "really easy to reach too",
+  "no surprises on price either",
+];
+
+// Optional tails for the short one-liners.
+export const shortTails = [
+  "super happy with the results",
+  "would highly recommend them",
+  "could not be happier",
+  "really happy with how it all turned out",
+  "great team from start to finish",
+  "the whole experience was awesome",
+  "we're very happy with the result",
+  "thank you again",
+  "five stars",
+  "would use them again",
+  "no complaints at all",
+  "very pleased",
+  "love the result",
+  "exactly what we wanted",
+  "so glad we called them",
+  "great people",
+  "will be calling them again",
+  "worth it",
+  "can't recommend them enough",
+  "we love it",
+];
+
+// Little extra observations, written as a verb phrase that follows "They".
+// Kept generic so they fit any kind of renovation.
+export const details = [
+  "sent us progress photos every few days",
+  "were careful with our floors the whole time",
+  "kept the dust under control",
+  "answered texts the same day",
+  "cleaned up every single day",
+  "covered everything before they started",
+  "even took care of the small touch ups at the end",
+  "were patient with all of our questions",
+  "checked in with us before each new step",
+  "respected that we were living in the house during the work",
+  "caught a couple of things we would have missed",
+  "came back to fix one tiny thing without us even asking",
+  "were easy to reach whenever we had a question",
+  "walked the finished work with us and made sure we were happy",
+  "kept the work area neat",
+  "did not disappear for days like other contractors we have used",
+  "showed us samples before we made decisions",
+  "helped us choose finishes when we were stuck",
+  "kept their promises on every detail",
+  "were upfront when something took longer than planned",
+  "never made us feel rushed",
+  "gave us a clear plan for each day",
+  "treated the job like it was their own home",
+  "were friendly with the whole family",
+  "made a point of explaining things in plain language",
+];
+
+// Words that start a sentence and lead straight into a clause.
+export const leadConnectors = [
+  "Also,",
+  "Honestly,",
+  "To be fair,",
+  "Oh and",
+  "On top of that,",
+  "Plus,",
+  "The best part is that",
+  "What stood out is that",
+];
+
+// Words that follow a comma and lead into another clause.
+export const fuseConnectors = [
+  "plus",
+  "and honestly",
+  "and on top of that",
+  "and also",
+  "and",
+];

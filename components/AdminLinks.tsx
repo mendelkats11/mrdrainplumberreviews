@@ -115,7 +115,14 @@ function shortName(row: AreaLinkRow): string {
   return row.name.startsWith(prefix) ? row.name.slice(prefix.length) : row.name;
 }
 
-export default function AdminLinks({ rows }: { rows: AreaLinkRow[] }) {
+export default function AdminLinks({
+  rows,
+  left = {},
+}: {
+  rows: AreaLinkRow[];
+  // Approved reviews still available per page (renovation pages only).
+  left?: Record<string, number>;
+}) {
   const router = useRouter();
 
   const groups = rows.reduce<{ business: string; rows: AreaLinkRow[] }[]>((acc, row) => {
@@ -162,6 +169,9 @@ export default function AdminLinks({ rows }: { rows: AreaLinkRow[] }) {
                     className="block cursor-pointer rounded-lg border border-border px-3 py-2 text-center text-sm text-text transition hover:border-teal-bright"
                   >
                     {shortName(row)}
+                    {row.slug in left && (
+                      <span className="block text-xs text-text-muted">{left[row.slug]} reviews left</span>
+                    )}
                   </a>
                 </li>
               ))}

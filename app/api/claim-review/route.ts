@@ -35,6 +35,11 @@ const DATA_DIR = path.join(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "used-reviews.json");
 const MAX_MATCHING_PHRASES = 4;
 
+// A distinctive phrase (an opening, a backstory, a closer) may not repeat
+// within the last few reviews of the same business. The engine lists which
+// phrase slots count (RECENCY_SLOTS); the original engine lists none.
+const RECENCY_WINDOW = 8;
+
 interface UsedRecord {
   id: number;
   area: string;
@@ -102,14 +107,15 @@ function validContentKey(key: unknown, dims: number[]): key is number[] {
   return (
     Array.isArray(key) &&
     key.length === dims.length &&
-    key.every((n, i) => Number.isInteger(n) && n >= 0 && n < dims[i])
+    // -1 marks a phrase slot the review does not show.
+    key.every((n, i) => Number.isInteger(n) && n >= -1 && n < dims[i])
   );
 }
 
 function matchingPhraseCount(a: number[], b: number[]): number {
   let count = 0;
   for (let i = 0; i < a.length && i < b.length; i++) {
-    if (a[i] === b[i]) count++;
+    if (a[i] >= 0 && a[i] === b[i]) count++;
   }
   return count;
 }
@@ -205,7 +211,11 @@ export async function POST(req: NextRequest) {
         ((r.engine ?? "plumbing") === engineKey &&
           matchingPhraseCount(r.contentKey, contentKey) > MAX_MATCHING_PHRASES),
     );
-    if (alreadyUsed) {
+    const recent = used.filter((r) => (r.engine ?? "plumbing") === engineKey).slice(-RECENCY_WINDOW);
+    const repeatsRecentPhrase = engine.RECENCY_SLOTS.some(
+      (slot) => contentKey[slot] >= 0 && recent.some((r) => r.contentKey[slot] === contentKey[slot]),
+    );
+    if (alreadyUsed || repeatsRecentPhrase) {
       return { ok: false as const };
     }
     used.push({ id, area, text, contentKey, engine: engineKey, usedAt: new Date().toISOString() });

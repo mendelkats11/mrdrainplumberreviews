@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/admin-auth";
 import { getReviewAreaBySlug, reviewAreas } from "@/lib/review-areas";
 import ReviewGenerator from "@/components/ReviewGenerator";
-import { engineKeyFor } from "@/lib/engines";
+import CuratedReview from "@/components/CuratedReview";
 import { getAreaUrl } from "@/lib/area-links";
 
 // Rendered per request (not at build time) so a link edited in /admin
@@ -79,8 +79,8 @@ export default async function ReviewAreaPage({
           />
         </>
       ) : (
-        // Renovation businesses use the same instant generator as the
-        // plumbing pages, with each business's own phrase pools.
+        // Renovation businesses only offer reviews the owner has approved
+        // (content/approved-reviews.json). Copying one uses it up.
         <>
           <div>
             <p className="max-w-md text-sm uppercase tracking-wide text-text-muted">
@@ -93,12 +93,10 @@ export default async function ReviewAreaPage({
             </p>
           </div>
 
-          <ReviewGenerator
+          <CuratedReview
             areaSlug={reviewArea.slug}
-            areaName={reviewArea.city ?? reviewArea.name}
             googleReviewUrl={googleReviewUrl}
             testMode={testMode}
-            engineKey={engineKeyFor(reviewArea)}
           />
         </>
       )}

@@ -47,7 +47,7 @@ export interface ReviewCandidate {
   contentKey: number[];
 }
 
-function cap(s: string): string {
+export function cap(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
@@ -55,7 +55,7 @@ function uncap(s: string): string {
   return s.charAt(0).toLowerCase() + s.slice(1);
 }
 
-function randInt(max: number): number {
+export function randInt(max: number): number {
   return Math.floor(Math.random() * max);
 }
 
@@ -243,5 +243,6 @@ export function createEngine(pools: PhrasePools) {
     CONTENT_DIMS,
     TOTAL_COMBINATIONS,
     TOTAL_CONTENT_COMBINATIONS,
+    RECENCY_SLOTS: [] as number[],
   };
 }
