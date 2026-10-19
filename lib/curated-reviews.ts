@@ -1,5 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
+import { readAll, writeAll } from "@/lib/durable-store";
 import approved from "@/content/approved-reviews.json";
 import type { ReviewArea } from "@/lib/review-areas";
 
@@ -29,7 +30,6 @@ export interface ApprovedReview {
 }
 
 const DATA_DIR = path.join(process.cwd(), "data");
-const CLAIMED_FILE = path.join(DATA_DIR, "claimed-curated.json");
 
 const allApproved = (approved as { reviews: ApprovedReview[] }).reviews;
 
@@ -39,31 +39,24 @@ interface ClaimRecord {
   claimedAt: string;
 }
 
-// Copied reviews are kept in TWO files, so that one lost folder does not
-// bring copied reviews back (which would hand the same review to two people):
-// the main one next to the app, and a backup one in the folder above it,
-// which a redeploy that replaces the app folder does not touch. Both are read
-// and combined every time, and a claim is written to both.
-const BACKUP_DIR = process.env.REVIEW_BACKUP_DIR || path.join(path.dirname(process.cwd()), "review-site-data");
-const BACKUP_FILE = path.join(BACKUP_DIR, "claimed-curated.json");
+// Copied reviews are kept in several files (see lib/durable-store.ts), so
+// that one lost folder does not bring copied reviews back, which would hand
+// the same review to two people. All of them are read and combined every
+// time, and a claim is written to all of them.
+const CLAIMED_NAME = "claimed-curated.json";
 const LOCK_DIR = path.join(DATA_DIR, "claimed-curated.lock");
 
-async function readStore(file: string): Promise<ClaimRecord[] | null> {
-  try {
-    const parsed = JSON.parse(await fs.readFile(file, "utf8"));
-    return Array.isArray(parsed) ? parsed.filter((r) => r && typeof r.id === "string") : [];
-  } catch {
-    return null; // missing or unreadable
-  }
+function recordsOf(value: unknown): ClaimRecord[] | null {
+  return Array.isArray(value) ? (value as ClaimRecord[]).filter((r) => r && typeof r.id === "string") : null;
 }
 
-// Everything claimed so far, from both files. Read fresh every time (the
+// Everything claimed so far, from every copy. Read fresh every time (the
 // files are small), so a second server process always sees the first one's
 // claims instead of a stale copy in memory.
 async function readClaimed(): Promise<Map<string, ClaimRecord>> {
   const map = new Map<string, ClaimRecord>();
-  for (const file of [CLAIMED_FILE, BACKUP_FILE]) {
-    for (const r of (await readStore(file)) ?? []) {
+  for (const { value } of await readAll(CLAIMED_NAME)) {
+    for (const r of recordsOf(value) ?? []) {
       const existing = map.get(r.id);
       if (!existing || r.claimedAt < existing.claimedAt) map.set(r.id, r);
     }
@@ -71,31 +64,8 @@ async function readClaimed(): Promise<Map<string, ClaimRecord>> {
   return map;
 }
 
-// Writes go to a temp file and are renamed into place so a crash mid-write
-// cannot leave truncated JSON behind.
-async function writeStore(file: string, map: Map<string, ClaimRecord>): Promise<void> {
-  await fs.mkdir(path.dirname(file), { recursive: true });
-  const tmp = `${file}.${process.pid}.tmp`;
-  await fs.writeFile(tmp, JSON.stringify([...map.values()]));
-  for (let attempt = 0; ; attempt++) {
-    try {
-      await fs.rename(tmp, file);
-      return;
-    } catch (error) {
-      // Windows can refuse a rename while another process is reading.
-      if (attempt >= 4) throw error;
-      await new Promise((resolve) => setTimeout(resolve, 25));
-    }
-  }
-}
-
 async function persist(map: Map<string, ClaimRecord>): Promise<void> {
-  await writeStore(CLAIMED_FILE, map); // must work, or the claim fails
-  try {
-    await writeStore(BACKUP_FILE, map); // best effort
-  } catch {
-    // The folder above the app may not be writable on every host.
-  }
+  await writeAll(CLAIMED_NAME, [...map.values()]);
 }
 
 // One claim at a time across processes: whoever creates the lock folder first
@@ -201,12 +171,15 @@ export async function claimReview(
   );
 }
 
-// For the admin screen: whether both record files agree. If the main file
-// holds fewer claims than the backup, the app folder was wiped by a redeploy
-// and the backup saved the day.
-export async function claimStatus(): Promise<{ claimed: number; main: number; backup: number | null }> {
-  const [main, backup] = await Promise.all([readStore(CLAIMED_FILE), readStore(BACKUP_FILE)]);
-  return { claimed: (await readClaimed()).size, main: main?.length ?? 0, backup: backup ? backup.length : null };
+// For the admin screen: how many copied reviews each place has on record. If
+// the app folder has fewer than another place, a redeploy cleared it and the
+// other copy restored the list. A place that cannot be written shows no count.
+export async function claimStatus(): Promise<{ claimed: number; stores: Array<{ label: string; count: number | null }> }> {
+  const copies = await readAll(CLAIMED_NAME);
+  return {
+    claimed: (await readClaimed()).size,
+    stores: copies.map((c) => ({ label: c.label, count: recordsOf(c.value)?.length ?? null })),
+  };
 }
 
 // Used by the admin screen: how many are left on each page.

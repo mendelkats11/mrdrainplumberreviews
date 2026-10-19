@@ -124,7 +124,7 @@ export default function AdminLinks({
   // Approved reviews still available per page (renovation pages only).
   left?: Record<string, number>;
   // How many copied reviews are on record, and whether the two record files agree.
-  claims?: { claimed: number; main: number; backup: number | null };
+  claims?: { claimed: number; stores: Array<{ label: string; count: number | null }> };
 }) {
   const router = useRouter();
 
@@ -157,10 +157,11 @@ export default function AdminLinks({
       </div>
       {claims && (
         <p className="mt-4 text-sm text-text-muted">
-          Copied reviews on record: {claims.claimed} (main file {claims.main}, backup file{" "}
-          {claims.backup === null ? "not available on this server" : claims.backup}).
-          {claims.backup !== null && claims.main < claims.backup &&
-            " The main file has fewer than the backup, so a redeploy cleared it and the backup restored the list."}
+          Copied reviews on record: {claims.claimed}. Kept in:{" "}
+          {claims.stores.map((st) => `${st.label} ${st.count === null ? "(not available here)" : st.count}`).join(", ")}.
+          {claims.stores[0].count !== null &&
+            claims.stores.some((st) => st.count !== null && st.count > claims.stores[0].count!) &&
+            " The app folder has fewer than another place, so a redeploy cleared it and the other copy restored the list."}
         </p>
       )}
       <section className="mt-5 rounded-2xl border border-border bg-surface p-4">

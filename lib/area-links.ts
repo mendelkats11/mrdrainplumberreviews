@@ -1,14 +1,13 @@
-import { promises as fs } from "fs";
-import path from "path";
 import { reviewAreas, getReviewAreaBySlug } from "@/lib/review-areas";
+import { readAll, writeAll } from "@/lib/durable-store";
 
 // Admin-edited review links live in a small JSON file layered OVER the
 // defaults in lib/review-areas.ts. An area with no override simply uses
-// its default, so if the file is ever lost (e.g. a redeploy replaces the
-// app directory) every page keeps working with the last links committed
-// to the code — you'd only need to re-enter any edits made since.
-const DATA_DIR = path.join(process.cwd(), "data");
-const DATA_FILE = path.join(DATA_DIR, "area-links.json");
+// its default. The file is written to several places (see
+// lib/durable-store.ts) because a redeploy can replace the app folder and
+// take a file there with it. A link that must never be lost belongs in
+// lib/review-areas.ts, which is part of the code.
+const DATA_NAME = "area-links.json";
 
 // A saved link must be https and point at Google. Without this, anyone who
 // got hold of the admin login could point every printed QR code at a
@@ -47,13 +46,29 @@ export function validateLinkUrl(raw: unknown): LinkCheck {
   return { ok: true, url: parsed.toString() };
 }
 
-async function readOverrides(): Promise<Record<string, string>> {
-  try {
-    const parsed = JSON.parse(await fs.readFile(DATA_FILE, "utf8"));
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
-  } catch {
-    return {};
+type Links = Record<string, string>;
+
+function asLinks(value: unknown): Links {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Links) : {};
+}
+
+// The saved links. Newer saves are written as { updatedAt, links }; the first
+// version of the file was a plain { slug: url } object. Of all the copies the
+// newest wins; old plain copies are only used when there is nothing newer.
+async function readOverrides(): Promise<Links> {
+  const copies = await readAll(DATA_NAME);
+  let newest: { updatedAt: number; links: Links } | null = null;
+  const plain: Links[] = [];
+  for (const { value } of copies) {
+    if (value && typeof value === "object" && "links" in value && typeof (value as { updatedAt?: unknown }).updatedAt === "number") {
+      const { updatedAt, links } = value as { updatedAt: number; links: unknown };
+      if (!newest || updatedAt > newest.updatedAt) newest = { updatedAt, links: asLinks(links) };
+    } else if (value) {
+      plain.push(asLinks(value));
+    }
   }
+  if (newest) return newest.links;
+  return Object.assign({}, ...plain.reverse());
 }
 
 // Serialize writes so two quick saves can't interleave and lose one.
@@ -108,9 +123,6 @@ export function setAreaUrl(slug: string, url: string | null): Promise<void> {
     const overrides = await readOverrides();
     if (url === null) delete overrides[slug];
     else overrides[slug] = url;
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    const tmp = `${DATA_FILE}.tmp`;
-    await fs.writeFile(tmp, JSON.stringify(overrides, null, 2));
-    await fs.rename(tmp, DATA_FILE);
+    await writeAll(DATA_NAME, { updatedAt: Date.now(), links: overrides });
   });
 }

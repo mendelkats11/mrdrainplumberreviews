@@ -44,12 +44,12 @@ const plumbingAreas: AreaSeed[] = [
   { slug: "white-rock", name: "White Rock", googleReviewUrl: "https://www.google.com/maps/search/?api=1&query=Mr.+Drain+Plumber&query_place_id=ChIJp-vcSn938ooRWPXqTWMRJDc" },
   { slug: "port-moody", name: "Port Moody", googleReviewUrl: "https://www.google.com/maps/search/?api=1&query=Mr.+Drain+Plumber&query_place_id=ChIJJfuZFbmReicRyt1msBGUdOQ" },
   { slug: "pitt-meadows", name: "Pitt Meadows", googleReviewUrl: "https://www.google.com/maps/search/?api=1&query=Mr.+Drain+Plumber&query_place_id=ChIJL7a_gVGbjkERQjHM7GEQqSY" },
-  { slug: "stonebridge", name: "Stonebridge", googleReviewUrl: "https://www.google.com/maps/search/?api=1&query=Mr.+Drain+Plumber+of+Stonebridge+Saskatoon&query_place_id=ChIJkSaQ037xBFMRi9m4SJXEscs" },
-  { slug: "college-park", name: "College Park", googleReviewUrl: "https://www.google.com/maps/search/?api=1&query=Mr.+Drain+Plumber+of+College+Park+Saskatoon&query_place_id=ChIJk4CEWGPzBFMRQcUnhykcgI8" },
-  { slug: "brighton", name: "Brighton", googleReviewUrl: "https://www.google.com/maps/search/?api=1&query=Mr.+Drain+Plumber+of+Brighton+Saskatoon&query_place_id=ChIJmay3E_DzBFMRPfVAd4VDneM" },
-  { slug: "rosewood", name: "Rosewood", googleReviewUrl: "https://www.google.com/maps/search/?api=1&query=Mr.+Drain+Plumber+of+Rosewood+Saskatoon&query_place_id=ChIJIdLDOqjzBFMRagEjXg6gw3s" },
-  { slug: "martensville", name: "Martensville", googleReviewUrl: "https://www.google.com/maps/search/?api=1&query=Mr.+Drain+Plumber+of+Martensville&query_place_id=ChIJ4ytmnLFdBFMR2G-dPK8W6Gs" },
-  { slug: "warman", name: "Warman", googleReviewUrl: "https://www.google.com/maps/search/?api=1&query=Mr.+Drain+Plumber+of+Warman&query_place_id=ChIJV5mPCWtdBFMRCwOBSczldnM" },
+  { slug: "stonebridge", name: "Stonebridge", googleReviewUrl: "https://maps.app.goo.gl/QyhdvAvejfxxQfeBA" },
+  { slug: "college-park", name: "College Park", googleReviewUrl: "https://maps.app.goo.gl/6UnZKgrWtkChJXQd6" },
+  { slug: "brighton", name: "Brighton", googleReviewUrl: "https://maps.app.goo.gl/szPEKBenLXVBuzUcA" },
+  { slug: "rosewood", name: "Rosewood", googleReviewUrl: "https://maps.app.goo.gl/mY3ucMtMcrjv74QG8" },
+  { slug: "martensville", name: "Martensville", googleReviewUrl: "https://maps.app.goo.gl/EGLtWVEDHSn9LSzNA" },
+  { slug: "warman", name: "Warman", googleReviewUrl: "https://maps.app.goo.gl/oBi3A2m5j5e7nFY89" },
 ];
 
 // The renovation businesses: three brands, each with a separate Google
@@ -95,6 +95,16 @@ const SECRET_ADDRESSES: Record<string, string> = {
 // all nine. Empty means none are, so a scan of a printed code finds nothing.
 const LIVE_SECRET_ADDRESSES: string[] = [];
 
+// Google review links for the renovation pages, keyed by the page's normal
+// address. Kept here, in the code, so a redeploy can never lose them; a page
+// not listed has no link yet (set one in the admin screen, or add it here).
+const RENOVATION_GOOGLE_LINKS: Record<string, string> = {
+  "renomake-mississauga": "https://maps.app.goo.gl/Z1nfhaKG9cT1de3x7",
+  "remodela-oakville": "https://maps.app.goo.gl/bQshVE88AornADNd9",
+  "forge-vaughan": "https://maps.app.goo.gl/FguEps2dioxGmg4M9",
+  "forge-north-york": "https://maps.app.goo.gl/M7VPv1esG7UZqshSA",
+};
+
 const renovationAreas: ReviewArea[] = renovationBrands.flatMap((brand) =>
   brand.cities.map((city) => ({
     slug: `${brand.key}-${city.toLowerCase().replace(/\s+/g, "-")}`,
@@ -104,7 +114,7 @@ const renovationAreas: ReviewArea[] = renovationBrands.flatMap((brand) =>
     kind: "renovation" as const,
     brand: brand.key,
     city,
-    googleReviewUrl: "",
+    googleReviewUrl: RENOVATION_GOOGLE_LINKS[`${brand.key}-${city.toLowerCase().replace(/\s+/g, "-")}`] ?? "",
   })),
 );
 
