@@ -27,6 +27,11 @@ export interface ReviewArea {
   // right business (one extra tap to "write a review" from the place page,
   // but it opens the app instead of staying in-browser).
   googleReviewUrl: string;
+  // Renovation pages only: a second, random address for the same page
+  // (review.mrdrainplumber.site/ followed by this), the one printed in the
+  // QR codes. It does nothing until it is switched on (see
+  // LIVE_SECRET_ADDRESSES); the normal address above always works.
+  secretSlug?: string;
 }
 
 // Each area is an independent entry — editing one's name/link doesn't
@@ -72,9 +77,28 @@ const renovationBrands: {
   },
 ];
 
+// The random addresses are fixed here because the QR codes are printed with
+// them; they must not change. Keyed by the page's normal address.
+const SECRET_ADDRESSES: Record<string, string> = {
+  "renomake-mississauga": "2ceedpqra2z7at",
+  "renomake-oakville": "6kdnkr7hr66rsz",
+  "renomake-vaughan": "99apt6pu3s292k",
+  "remodela-mississauga": "9egy8j7knupmn4",
+  "remodela-oakville": "upc4pe6uevx2xf",
+  "remodela-north-york": "6tvu56gptfyaas",
+  "forge-mississauga": "bhxdaddkvjtv7d",
+  "forge-vaughan": "nu2ydfh92be4bz",
+  "forge-north-york": "pt6asr4rmtc7ac"
+};
+
+// Which random addresses are switched on: a page's normal address, or "*" for
+// all nine. Empty means none are, so a scan of a printed code finds nothing.
+const LIVE_SECRET_ADDRESSES: string[] = [];
+
 const renovationAreas: ReviewArea[] = renovationBrands.flatMap((brand) =>
   brand.cities.map((city) => ({
     slug: `${brand.key}-${city.toLowerCase().replace(/\s+/g, "-")}`,
+    secretSlug: SECRET_ADDRESSES[`${brand.key}-${city.toLowerCase().replace(/\s+/g, "-")}`],
     name: `${brand.business} of ${city}`,
     business: brand.business,
     kind: "renovation" as const,
@@ -95,4 +119,15 @@ export const reviewAreas: ReviewArea[] = [
 
 export function getReviewAreaBySlug(slug: string) {
   return reviewAreas.find((a) => a.slug === slug);
+}
+
+// Finds the page for an address typed or scanned in the browser: the normal
+// address always, the random one only once it has been switched on.
+export function getReviewAreaByAddress(address: string): { area: ReviewArea; viaSecret: boolean; secretIsLive: boolean } | undefined {
+  const normal = reviewAreas.find((a) => a.slug === address);
+  if (normal) return { area: normal, viaSecret: false, secretIsLive: true };
+  const secret = reviewAreas.find((a) => a.secretSlug === address);
+  if (!secret) return undefined;
+  const live = LIVE_SECRET_ADDRESSES.includes("*") || LIVE_SECRET_ADDRESSES.includes(secret.slug);
+  return { area: secret, viaSecret: true, secretIsLive: live };
 }

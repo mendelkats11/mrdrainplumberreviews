@@ -39,37 +39,95 @@ interface ClaimRecord {
   claimedAt: string;
 }
 
-let cache: Map<string, ClaimRecord> | null = null;
+// Copied reviews are kept in TWO files, so that one lost folder does not
+// bring copied reviews back (which would hand the same review to two people):
+// the main one next to the app, and a backup one in the folder above it,
+// which a redeploy that replaces the app folder does not touch. Both are read
+// and combined every time, and a claim is written to both.
+const BACKUP_DIR = process.env.REVIEW_BACKUP_DIR || path.join(path.dirname(process.cwd()), "review-site-data");
+const BACKUP_FILE = path.join(BACKUP_DIR, "claimed-curated.json");
+const LOCK_DIR = path.join(DATA_DIR, "claimed-curated.lock");
 
-async function readClaimed(): Promise<Map<string, ClaimRecord>> {
-  if (cache) return cache;
-  const map = new Map<string, ClaimRecord>();
+async function readStore(file: string): Promise<ClaimRecord[] | null> {
   try {
-    const parsed = JSON.parse(await fs.readFile(CLAIMED_FILE, "utf8"));
-    if (Array.isArray(parsed)) {
-      for (const r of parsed) {
-        if (r && typeof r.id === "string") map.set(r.id, r as ClaimRecord);
-      }
-    }
+    const parsed = JSON.parse(await fs.readFile(file, "utf8"));
+    return Array.isArray(parsed) ? parsed.filter((r) => r && typeof r.id === "string") : [];
   } catch {
-    // No file yet: nothing has been claimed.
+    return null; // missing or unreadable
   }
-  cache = map;
+}
+
+// Everything claimed so far, from both files. Read fresh every time (the
+// files are small), so a second server process always sees the first one's
+// claims instead of a stale copy in memory.
+async function readClaimed(): Promise<Map<string, ClaimRecord>> {
+  const map = new Map<string, ClaimRecord>();
+  for (const file of [CLAIMED_FILE, BACKUP_FILE]) {
+    for (const r of (await readStore(file)) ?? []) {
+      const existing = map.get(r.id);
+      if (!existing || r.claimedAt < existing.claimedAt) map.set(r.id, r);
+    }
+  }
   return map;
 }
 
 // Writes go to a temp file and are renamed into place so a crash mid-write
 // cannot leave truncated JSON behind.
-async function writeClaimed(map: Map<string, ClaimRecord>): Promise<void> {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  const tmp = `${CLAIMED_FILE}.tmp`;
+async function writeStore(file: string, map: Map<string, ClaimRecord>): Promise<void> {
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  const tmp = `${file}.${process.pid}.tmp`;
   await fs.writeFile(tmp, JSON.stringify([...map.values()]));
-  await fs.rename(tmp, CLAIMED_FILE);
-  cache = map;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await fs.rename(tmp, file);
+      return;
+    } catch (error) {
+      // Windows can refuse a rename while another process is reading.
+      if (attempt >= 4) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+  }
 }
 
-// Serializes claims within this process so two near-simultaneous copy
-// clicks cannot both take the same review.
+async function persist(map: Map<string, ClaimRecord>): Promise<void> {
+  await writeStore(CLAIMED_FILE, map); // must work, or the claim fails
+  try {
+    await writeStore(BACKUP_FILE, map); // best effort
+  } catch {
+    // The folder above the app may not be writable on every host.
+  }
+}
+
+// One claim at a time across processes: whoever creates the lock folder first
+// goes ahead, the rest wait. A lock older than 10 seconds is a leftover from a
+// crash and is cleared.
+async function withClaimLock<T>(task: () => Promise<T>): Promise<T> {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  for (let attempt = 0; attempt < 200; attempt++) {
+    try {
+      await fs.mkdir(LOCK_DIR);
+      break;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      try {
+        const age = Date.now() - (await fs.stat(LOCK_DIR)).mtimeMs;
+        if (age > 10_000) await fs.rmdir(LOCK_DIR);
+      } catch {
+        // Released in the meantime.
+      }
+      await new Promise((resolve) => setTimeout(resolve, 25));
+      if (attempt === 199) throw new Error("could not get the claim lock");
+    }
+  }
+  try {
+    return await task();
+  } finally {
+    await fs.rmdir(LOCK_DIR).catch(() => undefined);
+  }
+}
+
+// Serializes claims within this process; the file lock above covers other
+// processes.
 let queue: Promise<unknown> = Promise.resolve();
 
 function enqueue<T>(task: () => Promise<T>): Promise<T> {
@@ -130,16 +188,25 @@ export async function claimReview(
   area: PoolArea & Pick<ReviewArea, "slug">,
   id: string,
 ): Promise<{ ok: boolean; text?: string }> {
-  return enqueue(async () => {
-    const review = allApproved.find((r) => r.id === id);
-    if (!review || !usableOn(review, area)) return { ok: false };
-    const claimed = await readClaimed();
-    if (claimed.has(id)) return { ok: false };
-    const next = new Map(claimed);
-    next.set(id, { id, area: area.slug, claimedAt: new Date().toISOString() });
-    await writeClaimed(next);
-    return { ok: true, text: review.text };
-  });
+  return enqueue(() =>
+    withClaimLock(async () => {
+      const review = allApproved.find((r) => r.id === id);
+      if (!review || !usableOn(review, area)) return { ok: false };
+      const claimed = await readClaimed();
+      if (claimed.has(id)) return { ok: false };
+      claimed.set(id, { id, area: area.slug, claimedAt: new Date().toISOString() });
+      await persist(claimed);
+      return { ok: true, text: review.text };
+    }),
+  );
+}
+
+// For the admin screen: whether both record files agree. If the main file
+// holds fewer claims than the backup, the app folder was wiped by a redeploy
+// and the backup saved the day.
+export async function claimStatus(): Promise<{ claimed: number; main: number; backup: number | null }> {
+  const [main, backup] = await Promise.all([readStore(CLAIMED_FILE), readStore(BACKUP_FILE)]);
+  return { claimed: (await readClaimed()).size, main: main?.length ?? 0, backup: backup ? backup.length : null };
 }
 
 // Used by the admin screen: how many are left on each page.

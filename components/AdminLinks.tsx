@@ -118,10 +118,13 @@ function shortName(row: AreaLinkRow): string {
 export default function AdminLinks({
   rows,
   left = {},
+  claims,
 }: {
   rows: AreaLinkRow[];
   // Approved reviews still available per page (renovation pages only).
   left?: Record<string, number>;
+  // How many copied reviews are on record, and whether the two record files agree.
+  claims?: { claimed: number; main: number; backup: number | null };
 }) {
   const router = useRouter();
 
@@ -152,6 +155,14 @@ export default function AdminLinks({
           Log out
         </button>
       </div>
+      {claims && (
+        <p className="mt-4 text-sm text-text-muted">
+          Copied reviews on record: {claims.claimed} (main file {claims.main}, backup file{" "}
+          {claims.backup === null ? "not available on this server" : claims.backup}).
+          {claims.backup !== null && claims.main < claims.backup &&
+            " The main file has fewer than the backup, so a redeploy cleared it and the backup restored the list."}
+        </p>
+      )}
       <section className="mt-5 rounded-2xl border border-border bg-surface p-4">
         <h2 className="font-semibold text-text">All review pages</h2>
         <p className="mt-1 text-sm text-text-muted">

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/admin-auth";
-import { getReviewAreaBySlug, reviewAreas } from "@/lib/review-areas";
+import { getReviewAreaByAddress, reviewAreas } from "@/lib/review-areas";
 import ReviewGenerator from "@/components/ReviewGenerator";
 import CuratedReview from "@/components/CuratedReview";
 import { hasCuratedPool } from "@/lib/curated-reviews";
@@ -24,7 +24,10 @@ export async function generateMetadata({
 }: {
   params: Promise<{ area: string }>;
 }): Promise<Metadata> {
-  const reviewArea = getReviewAreaBySlug((await params).area);
+  const found = getReviewAreaByAddress((await params).area);
+  const reviewArea = found?.area;
+  // A random address that is not switched on must not leak the page's name.
+  if (!found || !found.secretIsLive) return { title: "Leave a Review" };
   return {
     title: `Leave a Review | ${reviewArea?.kind === "renovation" ? reviewArea.name : "Mr. Drain Plumber"}`,
   };
@@ -38,8 +41,9 @@ export default async function ReviewAreaPage({
   searchParams: Promise<{ test?: string | string[] }>;
 }) {
   const { area } = await params;
-  const reviewArea = getReviewAreaBySlug(area);
-  if (!reviewArea) notFound();
+  const found = getReviewAreaByAddress(area);
+  if (!found) notFound();
+  const reviewArea = found.area;
   const googleReviewUrl = (await getAreaUrl(reviewArea.slug)) ?? reviewArea.googleReviewUrl;
 
   // ?test=1 only does anything for a logged-in admin: Copy then works
@@ -48,6 +52,9 @@ export default async function ReviewAreaPage({
   const { test } = await searchParams;
   const isAdmin = verifySessionToken((await cookies()).get(SESSION_COOKIE)?.value);
   const testMode = isAdmin && test === "1";
+  // A random address that is not switched on yet: everyone but a logged-in
+  // admin (who can test it) sees "page not found".
+  if (found.viaSecret && !found.secretIsLive && !isAdmin) notFound();
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-6 px-4 py-16 text-center">
