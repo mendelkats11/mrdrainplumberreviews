@@ -21,6 +21,12 @@ export interface HumanPools extends PhrasePools {
   brand: string;
   // How people loosely write the name, e.g. "Reno Make".
   nickname: string;
+  // For names people type several ways ("Mr. Drain Plumber", "mr drain
+  // plumber"): a regex source that finds every spelling, and the lowercase
+  // and first-letter forms to use. Default to the brand itself.
+  brandPattern?: string;
+  lowerForm?: string;
+  firstForm?: string;
   // Lowercase clauses. {brand} is replaced by the business name.
   backstories: string[];
   personalClosers: string[];
@@ -141,6 +147,13 @@ const imperfections: Imperfection[] = [
 // then an exclamation mark.
 const endStyles = [".", ".", "", "!"] as const;
 
+// Short one-liners: about 8 in 10 end with no punctuation, 1 in 10 with a
+// period, 1 in 10 with an exclamation mark.
+function shortEnding(): string {
+  const roll = randInt(10);
+  return roll < 8 ? "" : roll === 8 ? "." : "!";
+}
+
 const formatChoices = ["long", "short", "short", "short"] as const;
 
 // Content positions (see contentPools) of the distinctive phrases that must
@@ -256,7 +269,10 @@ export function createHumanEngine(pools: HumanPools) {
   const TOTAL_CONTENT_COMBINATIONS = CONTENT_DIMS.reduce((a, b) => a * b, 1);
   const TOTAL_COMBINATIONS = ALL_DIMS.reduce((a, b) => a * b, 1);
 
-  const brandPattern = new RegExp(escapeRegExp(brand), "gi");
+  const brandSource = pools.brandPattern ?? escapeRegExp(brand);
+  const brandPattern = new RegExp(brandSource, "gi");
+  const lowerForm = pools.lowerForm ?? brand.toLowerCase();
+  const firstForm = pools.firstForm ?? cap(brand.toLowerCase());
 
   // Recently shown phrase indices per content position.
   const recent = new Map<number, number[]>();
@@ -393,8 +409,8 @@ export function createHumanEngine(pools: HumanPools) {
     let out = text.replace(brandPattern, (m) => {
       const upper = /^[A-Z]/.test(m);
       const surface =
-        brandStyle === "lower" ? brand.toLowerCase()
-        : brandStyle === "first" ? cap(brand.toLowerCase())
+        brandStyle === "lower" ? lowerForm
+        : brandStyle === "first" ? firstForm
         : brandStyle === "nick" ? nickname
         : brand;
       return upper ? surface : surface.toLowerCase();
@@ -413,7 +429,7 @@ export function createHumanEngine(pools: HumanPools) {
   // Put an extra sentence after the first sentence, or at the end when the
   // review is a single sentence.
   function insertDetail(text: string, detail: string): string {
-    const boundary = text.search(/[.!?] (?=[A-Z])/);
+    const boundary = text.search(/(?<!\bMr)[.!?] (?=[A-Z])/);
     if (boundary === -1) return `${text.replace(/[.!]+$/, "")}. ${detail}.`;
     return `${text.slice(0, boundary + 1)} ${detail}.${text.slice(boundary + 1)}`;
   }
@@ -428,11 +444,13 @@ export function createHumanEngine(pools: HumanPools) {
     endIndex: number,
     forceBang: boolean,
     areaName: string,
+    endingOverride?: string,
   ): string {
     let text = fixPronoun(applyCapitalization(raw, capIndex));
     if (contractChoices[contractIndex] || kind === "apostrophes") text = contract(text);
     text = applyImperfection(text, kind);
     text = applyNameStyles(text, brandStyle, cityStyle, areaName);
+    if (endingOverride !== undefined) return text.replace(/[.!]+$/, "") + endingOverride;
     return applyEnding(text, endIndex, forceBang);
   }
 
@@ -449,7 +467,7 @@ export function createHumanEngine(pools: HumanPools) {
     if (formatChoices[fi] === "short") {
       let raw = cap(oneLiners[li].replaceAll("{service}", oneLinerServices[hti]));
       if (shortTailChoices[tailIndex] && !raw.includes(",")) raw += `, ${shortTails[sti]}`;
-      return finish(raw, capIndex, contractIndex, kind, brandStyle, cityStyle, endIndex, false, areaName);
+      return finish(raw, capIndex, contractIndex, kind, brandStyle, cityStyle, endIndex, false, areaName, shortEnding());
     }
 
     const fill = (s: string) => s.replaceAll("{brand}", brand).replaceAll("{area}", areaName);
@@ -498,7 +516,7 @@ export function createHumanEngine(pools: HumanPools) {
   function opensWithDanglingIt(text: string): boolean {
     const sentences = text.split(/(?<=[.!?])\s+/);
     if (sentences.length < 2) return false;
-    return /\b(it|it's)\b/i.test(sentences[0]) && !new RegExp(escapeRegExp(brand), "i").test(sentences[0]);
+    return /\b(it|it's)\b/i.test(sentences[0]) && !new RegExp(brandSource, "i").test(sentences[0]);
   }
 
   function randomCandidate(areaName: string): ReviewCandidate {

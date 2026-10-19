@@ -3,7 +3,7 @@
 // lib/review-engine.ts and is shared with the renovation businesses; this
 // file is only the plumbing wording plus one engine built from it.
 
-import { createEngine } from "@/lib/review-engine";
+import { createEngine, type PhrasePools } from "@/lib/review-engine";
 
 export const services = [
   "bathroom renovation",
@@ -525,7 +525,9 @@ const oneLiners = [
   "cant complain about the {service}, quick, fair, and done right",
 ];
 
-const engine = createEngine({
+// Exported so the curated-review tooling can build its own engine from the
+// same wording (see lib/pools/plumbing-human.ts).
+export const plumbingPools: PhrasePools = {
   services,
   oneLinerServices,
   openings,
@@ -534,7 +536,9 @@ const engine = createEngine({
   pricing,
   closings,
   oneLiners,
-});
+};
+
+const engine = createEngine(plumbingPools);
 
 export const randomCandidate = engine.randomCandidate;
 export const CONTENT_DIMS = engine.CONTENT_DIMS;

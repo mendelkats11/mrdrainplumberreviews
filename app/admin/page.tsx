@@ -4,7 +4,7 @@ import AdminLinks from "@/components/AdminLinks";
 import AdminLogin from "@/components/AdminLogin";
 import { SESSION_COOKIE, adminEnabled, verifySessionToken } from "@/lib/admin-auth";
 import { getAllAreaLinks } from "@/lib/area-links";
-import { remainingFor } from "@/lib/curated-reviews";
+import { hasCuratedPool, remainingFor } from "@/lib/curated-reviews";
 import { reviewAreas } from "@/lib/review-areas";
 
 // Depends on the login cookie, so it must render per request, never be
@@ -23,7 +23,7 @@ export default async function AdminPage() {
   const left: Record<string, number> = {};
   if (loggedIn) {
     for (const a of reviewAreas) {
-      if (a.kind === "renovation") left[a.slug] = await remainingFor(a);
+      if (a.kind === "renovation" || hasCuratedPool(a)) left[a.slug] = await remainingFor(a);
     }
   }
 

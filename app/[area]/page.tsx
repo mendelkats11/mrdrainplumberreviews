@@ -5,6 +5,7 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/admin-auth";
 import { getReviewAreaBySlug, reviewAreas } from "@/lib/review-areas";
 import ReviewGenerator from "@/components/ReviewGenerator";
 import CuratedReview from "@/components/CuratedReview";
+import { hasCuratedPool } from "@/lib/curated-reviews";
 import { getAreaUrl } from "@/lib/area-links";
 
 // Rendered per request (not at build time) so a link edited in /admin
@@ -71,12 +72,21 @@ export default async function ReviewAreaPage({
             </p>
           </div>
 
-          <ReviewGenerator
-            areaSlug={reviewArea.slug}
-            areaName={reviewArea.name}
-            googleReviewUrl={googleReviewUrl}
-            testMode={testMode}
-          />
+          {hasCuratedPool(reviewArea) ? (
+            // Owner-approved reviews, used up when copied.
+            <CuratedReview
+              areaSlug={reviewArea.slug}
+              googleReviewUrl={googleReviewUrl}
+              testMode={testMode}
+            />
+          ) : (
+            <ReviewGenerator
+              areaSlug={reviewArea.slug}
+              areaName={reviewArea.name}
+              googleReviewUrl={googleReviewUrl}
+              testMode={testMode}
+            />
+          )}
         </>
       ) : (
         // Renovation businesses only offer reviews the owner has approved

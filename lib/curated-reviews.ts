@@ -3,7 +3,8 @@ import path from "path";
 import approved from "@/content/approved-reviews.json";
 import type { ReviewArea } from "@/lib/review-areas";
 
-// The renovation pages do not generate text on the fly. Every review a
+// The renovation pages, and any plumbing page that has approved reviews,
+// do not generate text on the fly. Every review a
 // visitor can see was written or approved by the owner and lives in
 // content/approved-reviews.json (checked into the code, so it deploys with
 // it). A visitor can regenerate as often as they like; only COPYING a
@@ -19,9 +20,9 @@ export interface ApprovedReview {
   // new batches, to keep the pool varied. Absent once the owner edits a review.
   contentKey?: number[];
   id: string;
-  brand: "renomake" | "remodela" | "forge";
-  // Set when the text names a city; the review then only shows on that
-  // city's page. Null means any page of the brand can use it.
+  brand: "renomake" | "remodela" | "forge" | "plumbing";
+  // The page the review is served on: the city for a renovation business,
+  // the area name for a plumbing page. Null means any page of the brand.
   city: string | null;
   text: string;
   addedAt: string;
@@ -80,13 +81,31 @@ function enqueue<T>(task: () => Promise<T>): Promise<T> {
   return result;
 }
 
-function usableOn(review: ApprovedReview, area: Pick<ReviewArea, "brand" | "city">): boolean {
-  return review.brand === area.brand && (review.city === null || review.city === area.city);
+// What identifies a page's pool: a renovation page by business and city, a
+// plumbing page (no brand) by its area name.
+export type PoolArea = Pick<ReviewArea, "brand" | "city" | "name">;
+
+function poolBrand(area: PoolArea): ApprovedReview["brand"] {
+  return area.brand ?? "plumbing";
+}
+
+function poolCity(area: PoolArea): string {
+  return area.city ?? area.name;
+}
+
+function usableOn(review: ApprovedReview, area: PoolArea): boolean {
+  return review.brand === poolBrand(area) && (review.city === null || review.city === poolCity(area));
+}
+
+// True once the owner has approved at least one review for this page. A page
+// without any keeps its old behavior (the plumbing pages' generator).
+export function hasCuratedPool(area: PoolArea): boolean {
+  return allApproved.some((r) => usableOn(r, area));
 }
 
 // Reviews a page could still offer: right business, right city, not yet copied.
 export async function availableReviews(
-  area: Pick<ReviewArea, "brand" | "city">,
+  area: PoolArea,
 ): Promise<ApprovedReview[]> {
   const claimed = await readClaimed();
   return allApproved.filter((r) => usableOn(r, area) && !claimed.has(r.id));
@@ -95,7 +114,7 @@ export async function availableReviews(
 // A random available review, preferring one that is not in `avoid` so
 // Regenerate keeps showing something new. Null when the pool is empty.
 export async function pickReview(
-  area: Pick<ReviewArea, "brand" | "city">,
+  area: PoolArea,
   avoid: string[],
 ): Promise<ApprovedReview | null> {
   const pool = await availableReviews(area);
@@ -108,7 +127,7 @@ export async function pickReview(
 // Takes a review out of the pool. False if it does not exist, belongs to a
 // different business or city, or someone else copied it first.
 export async function claimReview(
-  area: Pick<ReviewArea, "slug" | "brand" | "city">,
+  area: PoolArea & Pick<ReviewArea, "slug">,
   id: string,
 ): Promise<{ ok: boolean; text?: string }> {
   return enqueue(async () => {
@@ -124,6 +143,6 @@ export async function claimReview(
 }
 
 // Used by the admin screen: how many are left on each page.
-export async function remainingFor(area: Pick<ReviewArea, "brand" | "city">): Promise<number> {
+export async function remainingFor(area: PoolArea): Promise<number> {
   return (await availableReviews(area)).length;
 }

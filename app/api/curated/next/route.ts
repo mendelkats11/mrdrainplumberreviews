@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getReviewAreaBySlug } from "@/lib/review-areas";
-import { pickReview } from "@/lib/curated-reviews";
+import { hasCuratedPool, pickReview } from "@/lib/curated-reviews";
 import { createRateLimiter } from "@/lib/rate-limit";
 
 // Hands a visitor one approved review that has not been copied yet.
@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
   const slug = req.nextUrl.searchParams.get("area") ?? "";
   const area = getReviewAreaBySlug(slug);
-  if (!area || area.kind !== "renovation") {
+  if (!area || !(area.kind === "renovation" || hasCuratedPool(area))) {
     return NextResponse.json({ error: "unknown area" }, { status: 404 });
   }
 

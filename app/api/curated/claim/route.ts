@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, sameOrigin, verifySessionToken } from "@/lib/admin-auth";
 import { getReviewAreaBySlug } from "@/lib/review-areas";
-import { claimReview } from "@/lib/curated-reviews";
+import { claimReview, hasCuratedPool } from "@/lib/curated-reviews";
 import { createRateLimiter } from "@/lib/rate-limit";
 
 // Called when a visitor copies a review. This is the moment it is taken out
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
   const area = typeof body?.area === "string" ? getReviewAreaBySlug(body.area) : undefined;
   const id = body?.id;
-  if (!area || area.kind !== "renovation" || typeof id !== "string" || !/^[a-z]+-\d{1,6}$/.test(id)) {
+  if (!area || !(area.kind === "renovation" || hasCuratedPool(area)) || typeof id !== "string" || !/^[a-z]+-\d{1,6}$/.test(id)) {
     return NextResponse.json({ ok: false, error: "invalid payload" }, { status: 400 });
   }
 
