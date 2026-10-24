@@ -93,7 +93,7 @@ const SECRET_ADDRESSES: Record<string, string> = {
 
 // Which random addresses are switched on: a page's normal address, or "*" for
 // all nine. Empty means none are, so a scan of a printed code finds nothing.
-const LIVE_SECRET_ADDRESSES: string[] = [];
+const LIVE_SECRET_ADDRESSES: string[] = ["*"];
 
 // Google review links for the renovation pages, keyed by the page's normal
 // address. Kept here, in the code, so a redeploy can never lose them; a page
