@@ -100,7 +100,12 @@ const LIVE_SECRET_ADDRESSES: string[] = ["*"];
 // not listed has no link yet (set one in the admin screen, or add it here).
 const RENOVATION_GOOGLE_LINKS: Record<string, string> = {
   "renomake-mississauga": "https://maps.app.goo.gl/Z1nfhaKG9cT1de3x7",
+  "renomake-oakville": "https://maps.app.goo.gl/8FR46UzinEnsws1u8",
+  "renomake-vaughan": "https://maps.app.goo.gl/nkSjBbv7bfBUf3pA7",
+  "remodela-mississauga": "https://maps.app.goo.gl/nRjwfezTJnCYYoRC6",
   "remodela-oakville": "https://maps.app.goo.gl/bQshVE88AornADNd9",
+  "remodela-north-york": "https://maps.app.goo.gl/TgFehP1tugXuKpau9",
+  "forge-mississauga": "https://maps.app.goo.gl/kNGQg2q1HgVHhDBr8",
   "forge-vaughan": "https://maps.app.goo.gl/FguEps2dioxGmg4M9",
   "forge-north-york": "https://maps.app.goo.gl/M7VPv1esG7UZqshSA",
 };
