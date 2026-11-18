@@ -29,7 +29,9 @@ const engines: Record<EngineKey, Engine> = {
 };
 
 export function engineKeyFor(area: Pick<ReviewArea, "brand">): EngineKey {
-  return area.brand ?? "plumbing";
+  // 360 Exterior only serves approved reviews, so it never uses a generator;
+  // this fallback just keeps the types honest.
+  return area.brand === "exterior" ? "plumbing" : (area.brand ?? "plumbing");
 }
 
 export function getEngineByKey(key: EngineKey): Engine {

@@ -11,7 +11,7 @@ export interface ReviewArea {
   kind: "plumbing" | "renovation";
   // Renovation pages only: which business's phrase pools to use, and the
   // city for the location mention.
-  brand?: "renomake" | "remodela" | "forge";
+  brand?: "renomake" | "remodela" | "forge" | "exterior";
   city?: string;
   // Empty until a link is set in the admin screen; the page then simply
   // hides its Google button. Format, once known:
@@ -123,6 +123,19 @@ const renovationAreas: ReviewArea[] = renovationBrands.flatMap((brand) =>
   })),
 );
 
+// 360 Exterior Group: one page, one Google profile, its own approved reviews
+// (window cleaning, eavestrough cleaning, pavers, landscaping).
+const exteriorAreas: ReviewArea[] = [
+  {
+    slug: "360-exterior",
+    name: "360 Exterior Group",
+    business: "360 Exterior Group",
+    kind: "renovation",
+    brand: "exterior",
+    googleReviewUrl: "https://maps.app.goo.gl/YRmCKXNH1ydYjDUc6",
+  },
+];
+
 export const reviewAreas: ReviewArea[] = [
   ...plumbingAreas.map((a) => ({
     ...a,
@@ -130,6 +143,7 @@ export const reviewAreas: ReviewArea[] = [
     kind: "plumbing" as const,
   })),
   ...renovationAreas,
+  ...exteriorAreas,
 ];
 
 export function getReviewAreaBySlug(slug: string) {

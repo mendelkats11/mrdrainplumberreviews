@@ -21,7 +21,7 @@ export interface ApprovedReview {
   // new batches, to keep the pool varied. Absent once the owner edits a review.
   contentKey?: number[];
   id: string;
-  brand: "renomake" | "remodela" | "forge" | "plumbing";
+  brand: "renomake" | "remodela" | "forge" | "exterior" | "plumbing";
   // The page the review is served on: the city for a renovation business,
   // the area name for a plumbing page. Null means any page of the brand.
   city: string | null;
